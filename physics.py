@@ -80,18 +80,24 @@ def raw_diffusion_coefficient(E: np.ndarray, Z: np.ndarray, model: str) -> np.nd
     return D * material_factor(Z)
 
 
-def wilson_limiter(E_left: np.ndarray, E_right: np.ndarray,
-                   D_face_raw: np.ndarray) -> np.ndarray:
+def wilson_limiter(E_left: np.ndarray,
+                   E_right: np.ndarray,
+                   D_face_raw: np.ndarray,
+                   distance: float) -> np.ndarray:
     """Apply Wilson's limiter on a face using adjacent cell values.
 
-    For M3, the limiter should be built on faces rather than from a cell-centered
-    gradient magnitude. A face-based form closer to the paper is
-        D_L(face) = 1 / (1 / D(face) + |E_R - E_L| / E_avg),
-    with E_avg = 0.5 * (E_L + E_R).
+    Paper form:
+        D_L = 1 / (1 / D + |grad E| / E)
+
+    On an interior face, approximate
+        |grad E| / E ≈ |E_R - E_L| / (distance * E_avg),
+    where distance is dx for x-faces and dy for y-faces.
     """
     E_avg = 0.5 * (np.maximum(E_left, 1e-30) + np.maximum(E_right, 1e-30))
-    jump_ratio = np.abs(E_right - E_left) / np.maximum(E_avg, 1e-30)
-    return 1.0 / (1.0 / np.maximum(D_face_raw, 1e-30) + jump_ratio)
+    grad_over_E = np.abs(E_right - E_left) / (
+        max(distance, 1e-30) * np.maximum(E_avg, 1e-30)
+    )
+    return 1.0 / (1.0 / np.maximum(D_face_raw, 1e-30) + grad_over_E)
 
 
 def diffusion_coefficient(E: np.ndarray, Z: np.ndarray, model: str,

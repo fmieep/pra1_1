@@ -26,7 +26,7 @@ GMRES_RESTART = MAX_LINEAR_ITERS
 RHO_JFNK = 1e-8
 USE_MG_PRECONDITIONER = True
 MG_SMOOTHER = "jacobi"  # 可选: "jacobi", "gs", "sgs"
-JFNK_EPS_MODE = "paper"
+JFNK_EPS_MODE = "normalized"
 DAMPING_NORM = "linf"
 # ---------- 运行细参数 ----------
 # 是否覆盖 default_run_config 里的默认值
@@ -41,9 +41,9 @@ E_FLOOR = 1.0
 
 # ---------- 批量测试参数 ----------
 BATCH_METHODS = ["nk2"]
-BATCH_MODELS = ["M1", "M2", "M3"]
-BATCH_ETAS = [0.10]
-BATCH_GRIDS = [32]
+BATCH_MODELS = ["M3"]
+BATCH_ETAS = [0.10,0.50]
+BATCH_GRIDS = [32,64]
 
 # =========================================================
 # 下面一般不用改

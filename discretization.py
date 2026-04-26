@@ -50,26 +50,108 @@ def build_raw_face_diffusion(D_cell: np.ndarray) -> tuple[np.ndarray, np.ndarray
     return compute_face_diffusion(D_cell)
 
 
+def _limit_robin_boundary_face(E_cell: np.ndarray,
+                               D_raw_face: np.ndarray,
+                               dx: float,
+                               F_inc: float | np.ndarray,
+                               side: str,
+                               n_iter: int = 3) -> np.ndarray:
+    """Wilson-limit a Milne/Robin x-boundary face.
+
+    The interior Wilson limiter uses |grad E| / E. On a Robin boundary, there is
+    no neighboring exterior cell, so estimate |grad E| from the Robin boundary
+    flux relation.
+
+    For q = -D grad(E):
+        left  boundary flux: q = alpha - beta * E_cell
+        right boundary flux: q = beta * E_cell - alpha
+
+    Then
+        |grad E| / E ≈ |q| / (D_face * E_cell).
+
+    We use a few fixed-point iterations because alpha,beta depend on the limited
+    boundary diffusion coefficient.
+    """
+    D_limited = np.maximum(D_raw_face.copy(), 1e-30)
+    E_ref = np.maximum(E_cell, 1e-30)
+
+    for _ in range(n_iter):
+        alpha, beta = _milne_robin_coefficients(D_limited, dx, F_inc)
+
+        if side == "left":
+            q = alpha - beta * E_cell
+        elif side == "right":
+            q = beta * E_cell - alpha
+        else:
+            raise ValueError("side must be 'left' or 'right'.")
+
+        grad_over_E = np.abs(q) / (np.maximum(D_limited, 1e-30) * E_ref)
+        D_limited = 1.0 / (
+            1.0 / np.maximum(D_raw_face, 1e-30) + grad_over_E
+        )
+
+    return D_limited
+
+
 def apply_wilson_limiter_on_faces(E: np.ndarray,
                                   Dx_raw: np.ndarray,
-                                  Dy_raw: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+                                  Dy_raw: np.ndarray,
+                                  grid: dict | None = None,
+                                  boundary: dict | None = None
+                                  ) -> tuple[np.ndarray, np.ndarray]:
     """Apply Wilson's limiter directly on faces for model M3.
 
-    M3 cannot reuse the old cell-centered limiter path because the paper's
-    limiter is naturally expressed with adjacent cell values on each face.
-    The limited coefficients are therefore formed separately on x- and y-faces.
+    Interior faces use the paper-like face-gradient form:
+        D_L = 1 / (1 / D + |grad E| / E).
+
+    Left/right Robin boundary faces are also limited, using the Robin boundary
+    flux to estimate |grad E| / E.
     """
     nx, ny = E.shape
     Dx = Dx_raw.copy()
     Dy = Dy_raw.copy()
 
+    dx = 1.0 if grid is None else grid["dx"]
+    dy = 1.0 if grid is None else grid["dy"]
+
+    # Interior x-faces.
     if nx > 1:
-        Dx[1:nx, :] = wilson_limiter(E[:-1, :], E[1:, :], Dx_raw[1:nx, :])
+        Dx[1:nx, :] = wilson_limiter(
+            E[:-1, :],
+            E[1:, :],
+            Dx_raw[1:nx, :],
+            distance=dx,
+        )
+
+    # Interior y-faces.
     if ny > 1:
-        Dy[:, 1:ny] = wilson_limiter(E[:, :-1], E[:, 1:], Dy_raw[:, 1:ny])
+        Dy[:, 1:ny] = wilson_limiter(
+            E[:, :-1],
+            E[:, 1:],
+            Dy_raw[:, 1:ny],
+            distance=dy,
+        )
+
+    # Left/right Robin boundary x-faces.
+    # Top/bottom are symmetric boundaries, so they are still zero-flux boundaries
+    # and do not need separate incident-flux limiting.
+    if grid is not None and boundary is not None:
+        Dx[0, :] = _limit_robin_boundary_face(
+            E_cell=E[0, :],
+            D_raw_face=Dx_raw[0, :],
+            dx=dx,
+            F_inc=boundary["left"]["F_inc"],
+            side="left",
+        )
+        Dx[-1, :] = _limit_robin_boundary_face(
+            E_cell=E[-1, :],
+            D_raw_face=Dx_raw[-1, :],
+            dx=dx,
+            F_inc=boundary["right"]["F_inc"],
+            side="right",
+        )
 
     return Dx, Dy
-
 
 def _broadcast_boundary_value(value: float | np.ndarray, n: int) -> np.ndarray:
     arr = np.asarray(value, dtype=float)
@@ -237,7 +319,13 @@ def build_frozen_diffusion(E: np.ndarray,
     Dx_raw, Dy_raw = build_raw_face_diffusion(D_raw_cell)
 
     E_limiter = E if E_for_limiter is None else E_for_limiter
-    Dx, Dy = apply_wilson_limiter_on_faces(E_limiter, Dx_raw, Dy_raw)
+    Dx, Dy = apply_wilson_limiter_on_faces(
+    E_limiter,
+    Dx_raw,
+    Dy_raw,
+    grid=problem["grid"],
+    boundary=problem["boundary"],
+)
 
     return D_raw_cell, Dx, Dy
 
