@@ -1,0 +1,206 @@
+from config import SolverConfig, default_run_config
+from problem import build_problem
+from driver import run_simulation
+import time
+
+# =========================================================
+# 这里是“总开关”：改这里就行
+# =========================================================
+
+MODE = "batch"  # 可选: "single" 或 "batch"
+
+# ---------- 单个测试参数 ----------
+METHOD = "nk2"  # 可选: "nk2" 或 "picard"
+MODEL = "M2"  # 可选: "M1", "M2", "M3"
+ETA = 0.10  # 常用: 0.10 或 0.50
+NX = 32
+NY = 32
+
+
+# ---------- 求解器细参数 ----------
+NONLINEAR_TOL = 1e-6
+LINEAR_TOL_FACTOR = 1e-2
+MAX_NONLINEAR_ITERS = 50
+MAX_LINEAR_ITERS = 100
+GMRES_RESTART = MAX_LINEAR_ITERS
+RHO_JFNK = 1e-8
+USE_MG_PRECONDITIONER = True
+MG_SMOOTHER = "jacobi"  # 可选: "jacobi", "gs", "sgs"
+JFNK_EPS_MODE = "paper"
+DAMPING_NORM = "linf"
+# ---------- 运行细参数 ----------
+# 是否覆盖 default_run_config 里的默认值
+OVERRIDE_T_END = False
+T_END = 0.005
+
+OVERRIDE_DT_INIT = False
+DT_INIT = 1e-6
+
+DT_GROWTH_LIMIT = 1.1
+E_FLOOR = 1.0
+
+# ---------- 批量测试参数 ----------
+BATCH_METHODS = ["nk2"]
+BATCH_MODELS = ["M1", "M2", "M3"]
+BATCH_ETAS = [0.10]
+BATCH_GRIDS = [32]
+
+# =========================================================
+# 下面一般不用改
+# =========================================================
+
+
+def safe_average(values):
+    return float("nan") if len(values) == 0 else sum(values) / len(values)
+
+
+def make_run_config(model, nx, ny, eta):
+    run_cfg = default_run_config(model=model, nx=nx, ny=ny, eta_target=eta)
+
+    if OVERRIDE_T_END:
+        run_cfg.t_end = T_END
+    if OVERRIDE_DT_INIT:
+        run_cfg.dt_init = DT_INIT
+
+    run_cfg.dt_growth_limit = DT_GROWTH_LIMIT
+    run_cfg.e_floor = E_FLOOR
+    return run_cfg
+
+
+def make_solver_config(method):
+    return SolverConfig(
+        method=method,
+        nonlinear_tol=NONLINEAR_TOL,
+        linear_tol_factor=LINEAR_TOL_FACTOR,
+        max_nonlinear_iters=MAX_NONLINEAR_ITERS,
+        max_linear_iters=MAX_LINEAR_ITERS,
+        gmres_restart=GMRES_RESTART,
+        rho_jfnk=RHO_JFNK,
+        use_multigrid_preconditioner=USE_MG_PRECONDITIONER,
+        mg_smoother=MG_SMOOTHER,
+        jfnk_eps_mode=JFNK_EPS_MODE,
+        damping_norm=DAMPING_NORM,
+    )
+
+
+def print_case_summary(method, model, eta, nx, ny, result, solver_cfg):
+    avg_linear = safe_average(result["linear_iters_history"])
+    avg_nonlinear = safe_average(result["nonlinear_iters_history"])
+    max_linear = (
+        max(result["linear_iters_history"])
+        if len(result["linear_iters_history"]) > 0
+        else float("nan")
+    )
+    max_nonlinear = (
+        max(result["nonlinear_iters_history"])
+        if len(result["nonlinear_iters_history"]) > 0
+        else float("nan")
+    )
+    max_eta = (
+        max(result["eta_history"]) if len(result["eta_history"]) > 0 else float("nan")
+    )
+    last_dt = (
+        result["dt_history"][-1] if len(result["dt_history"]) > 0 else float("nan")
+    )
+    final_res = (
+        result["residual_history"][-1]
+        if len(result["residual_history"]) > 0
+        else float("nan")
+    )
+
+    print("=" * 60)
+    print(f"method           = {method}")
+    print(f"model            = {model}")
+    print(f"eta_target       = {eta}")
+    print(f"grid             = {nx} x {ny}")
+    print(f"mg smoother      = {solver_cfg.mg_smoother}")
+    print(f"jfnk eps mode    = {solver_cfg.jfnk_eps_mode}")
+    print(f"damping norm     = {solver_cfg.damping_norm}")
+    print(f"gmres restart    = {solver_cfg.gmres_restart}")
+    print("-" * 60)
+    print(f"converged        = {result['converged']}")
+    print(f"t_final          = {result['t_final']}")
+    print(f"num_steps        = {len(result['time_history'])}")
+    print(f"avg linear iters = {avg_linear}")
+    print(f"avg nonlinear    = {avg_nonlinear}")
+    print(f"max eta measured = {max_eta}")
+    print(f"last dt          = {last_dt}")
+    print(f"final residual   = {final_res}")
+    print(f"max linear iters = {max_linear}")
+    print(f"max nonlinear    = {max_nonlinear}")
+    print(f"failed_step      = {result['failed_step']}")
+    print(f"failure_reason   = {result['failure_reason']}")
+    print("=" * 60)
+    print()
+
+
+def run_one_case(method, model, eta, nx, ny):
+    start = time.perf_counter()
+
+    run_cfg = make_run_config(model=model, nx=nx, ny=ny, eta=eta)
+    problem = build_problem(run_cfg)
+    solver_cfg = make_solver_config(method=method)
+    result = run_simulation(problem, run_cfg, solver_cfg)
+
+    elapsed = time.perf_counter() - start
+    print_case_summary(method, model, eta, nx, ny, result, solver_cfg)
+    print(f"elapsed seconds  = {elapsed:.3f}")
+    print()
+
+    return result
+
+
+def run_batch():
+    all_results = []
+    for method in BATCH_METHODS:
+        for model in BATCH_MODELS:
+            for eta in BATCH_ETAS:
+                for g in BATCH_GRIDS:
+                    result = run_one_case(method, model, eta, g, g)
+                    all_results.append(
+                        {
+                            "method": method,
+                            "model": model,
+                            "eta": eta,
+                            "grid": g,
+                            "smoother": MG_SMOOTHER,
+                            "jfnk_eps_mode": JFNK_EPS_MODE,
+                            "damping_norm": DAMPING_NORM,
+                            "converged": result["converged"],
+                            "num_steps": len(result["time_history"]),
+                            "avg_linear": safe_average(result["linear_iters_history"]),
+                            "avg_nonlinear": safe_average(
+                                result["nonlinear_iters_history"]
+                            ),
+                            "failure_reason": result["failure_reason"],
+                        }
+                    )
+
+    print("\n" + "#" * 80)
+    print("批量测试汇总")
+    print("#" * 80)
+    for row in all_results:
+        status = "OK" if row["converged"] else "FAIL"
+        print(
+            f"[{status}] "
+            f"method={row['method']:<6} "
+            f"model={row['model']:<2} "
+            f"eta={row['eta']:<4} "
+            f"grid={row['grid']}x{row['grid']:<3} "
+            f"smoother={row['smoother']:<6} "
+            f"eps={row['jfnk_eps_mode']:<10} "
+            f"damp={row['damping_norm']:<5} "
+            f"steps={row['num_steps']:<4} "
+            f"avg_lin={row['avg_linear']:<10.4f} "
+            f"avg_nonlin={row['avg_nonlinear']:<10.4f} "
+            f"reason={row['failure_reason']}"
+        )
+
+
+if __name__ == "__main__":
+    if MODE == "single":
+        run_one_case(METHOD, MODEL, ETA, NX, NY)
+    elif MODE == "batch":
+        run_batch()
+    else:
+        raise ValueError("MODE 必须是 'single' 或 'batch'")
