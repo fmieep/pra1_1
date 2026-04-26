@@ -524,7 +524,7 @@ def v_cycle(levels: list[dict], level_idx: int, rhs: np.ndarray, x0: np.ndarray)
     A_mv = lambda u: _apply_picard_operator(u, level)
 
     # 1. Pre-smoothing
-    x = smooth_level(level, rhs, x0, n_sweeps=2)
+    x = smooth_level(level, rhs, x0, n_sweeps=3)
 
     # 2. Coarsest-grid solve
     if level_idx == len(levels) - 1 or min(rhs.shape) <= 4:
@@ -542,7 +542,7 @@ def v_cycle(levels: list[dict], level_idx: int, rhs: np.ndarray, x0: np.ndarray)
     x = x + prolong_piecewise_constant(error_coarse)
 
     # 6. Post-smoothing
-    x = smooth_level(level, rhs, x, n_sweeps=2)
+    x = smooth_level(level, rhs, x, n_sweeps=3)
 
     return x
 

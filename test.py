@@ -1,6 +1,7 @@
 from config import SolverConfig, default_run_config
 from problem import build_problem
 from driver import run_simulation
+import numpy as np
 import time
 
 # =========================================================
@@ -12,14 +13,14 @@ MODE = "batch"  # 可选: "single" 或 "batch"
 # ---------- 单个测试参数 ----------
 METHOD = "nk2"  # 可选: "nk2" 或 "picard"
 MODEL = "M2"  # 可选: "M1", "M2", "M3"
-ETA = 0.10  # 常用: 0.10 或 0.50
-NX = 32
-NY = 32
+ETA = 0.50 # 常用: 0.10 或 0.50
+NX = 128
+NY = 128
 
 
 # ---------- 求解器细参数 ----------
 NONLINEAR_TOL = 1e-6
-LINEAR_TOL_FACTOR = 1e-2
+LINEAR_TOL_FACTOR = 3e-3
 MAX_NONLINEAR_ITERS = 50
 MAX_LINEAR_ITERS = 100
 GMRES_RESTART = MAX_LINEAR_ITERS
@@ -31,7 +32,7 @@ DAMPING_NORM = "linf"
 # ---------- 运行细参数 ----------
 # 是否覆盖 default_run_config 里的默认值
 OVERRIDE_T_END = False
-T_END = 0.005
+T_END = 0.002
 
 OVERRIDE_DT_INIT = False
 DT_INIT = 1e-6
@@ -41,9 +42,9 @@ E_FLOOR = 1.0
 
 # ---------- 批量测试参数 ----------
 BATCH_METHODS = ["nk2"]
-BATCH_MODELS = ["M3"]
-BATCH_ETAS = [0.10,0.50]
-BATCH_GRIDS = [32,64]
+BATCH_MODELS = ["M1","M2", "M3"]
+BATCH_ETAS = [0.10, 0.50]
+BATCH_GRIDS = [32, 64, 128]
 
 # =========================================================
 # 下面一般不用改
@@ -86,6 +87,11 @@ def make_solver_config(method):
 def print_case_summary(method, model, eta, nx, ny, result, solver_cfg):
     avg_linear = safe_average(result["linear_iters_history"])
     avg_nonlinear = safe_average(result["nonlinear_iters_history"])
+    avg_lin_per_nonlin = (
+        avg_linear / avg_nonlinear
+        if np.isfinite(avg_linear) and np.isfinite(avg_nonlinear) and avg_nonlinear > 0
+        else float("nan")
+    )
     max_linear = (
         max(result["linear_iters_history"])
         if len(result["linear_iters_history"]) > 0
@@ -123,6 +129,7 @@ def print_case_summary(method, model, eta, nx, ny, result, solver_cfg):
     print(f"num_steps        = {len(result['time_history'])}")
     print(f"avg linear iters = {avg_linear}")
     print(f"avg nonlinear    = {avg_nonlinear}")
+    print(f"avg lin/nonlin  = {avg_lin_per_nonlin}")
     print(f"max eta measured = {max_eta}")
     print(f"last dt          = {last_dt}")
     print(f"final residual   = {final_res}")
@@ -168,9 +175,15 @@ def run_batch():
                             "damping_norm": DAMPING_NORM,
                             "converged": result["converged"],
                             "num_steps": len(result["time_history"]),
-                            "avg_linear": safe_average(result["linear_iters_history"]),
-                            "avg_nonlinear": safe_average(
-                                result["nonlinear_iters_history"]
+                            "avg_linear": (
+                                safe_average(result["linear_iters_history"])
+                                if result["converged"]
+                                else float("nan")
+                            ),
+                            "avg_nonlinear": (
+                                safe_average(result["nonlinear_iters_history"])
+                                if result["converged"]
+                                else float("nan")
                             ),
                             "failure_reason": result["failure_reason"],
                         }
@@ -179,8 +192,20 @@ def run_batch():
     print("\n" + "#" * 80)
     print("批量测试汇总")
     print("#" * 80)
+    print("\n" + "#" * 80)
+    print("批量测试汇总")
+    print("#" * 80)
+
     for row in all_results:
-        status = "OK" if row["converged"] else "FAIL"
+        if row["converged"]:
+            status = "OK"
+            avg_lin_str = f"{row['avg_linear']:<10.4f}"
+            avg_nonlin_str = f"{row['avg_nonlinear']:<10.4f}"
+        else:
+            status = "FAIL"
+            avg_lin_str = f"{'--':<10}"
+            avg_nonlin_str = f"{'--':<10}"
+
         print(
             f"[{status}] "
             f"method={row['method']:<6} "
@@ -191,8 +216,8 @@ def run_batch():
             f"eps={row['jfnk_eps_mode']:<10} "
             f"damp={row['damping_norm']:<5} "
             f"steps={row['num_steps']:<4} "
-            f"avg_lin={row['avg_linear']:<10.4f} "
-            f"avg_nonlin={row['avg_nonlinear']:<10.4f} "
+            f"avg_lin={avg_lin_str} "
+            f"avg_nonlin={avg_nonlin_str} "
             f"reason={row['failure_reason']}"
         )
 
