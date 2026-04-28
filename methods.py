@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 import numpy as np
-from physics import mass_coefficient, storage_quantity, energy_to_temperature
+from physics import (
+    frozen_storage_coefficient,
+    mass_coefficient,
+    storage_quantity,
+    energy_to_temperature,
+)
 from discretization import (
     apply_diffusion_from_faces,
     build_boundary_data,
@@ -12,7 +17,6 @@ from discretization import (
     diffusion_operator_split,
 )
 from solvers import gmres, PicardMGPreconditioner
-
 
 def residual_nk2(
     E_new: np.ndarray, E_old: np.ndarray, dt: float, problem: dict, model: str
@@ -136,6 +140,7 @@ def _build_step_stats(
     linear_iters_total: int,
     converged: bool,
     final_residual_norm: float,
+    linear_iters_by_nonlinear: list[int] | None = None,
 ) -> dict:
     """Return a consistent step-statistics payload.
 
@@ -149,6 +154,7 @@ def _build_step_stats(
         "converged": converged,
         "linear_iters": linear_iters_total,
         "residual_norm": final_residual_norm,
+        "linear_iters_by_nonlinear": [] if linear_iters_by_nonlinear is None else linear_iters_by_nonlinear,
     }
 
 
@@ -159,13 +165,23 @@ def build_picard_linearization(
     problem: dict,
     model: str,
     mg_smoother: str = "jacobi",
+    mg_pre_smooths: int = 3,
+    mg_post_smooths: int = 3,
+    picard_mass_mode: str = "q_derivative",
 ) -> tuple[callable, PicardMGPreconditioner]:
     """Build the midpoint Picard-linearized correction operator."""
     E_for_grad, E_for_coeff = build_midpoint_states(E_guess, E_old)
 
     # 时间项 Q(E_new)-Q(E_old) 对未知量 E_new 线性化，
     # 因此 M2 应该在 E_guess 处取 dQ/dE，而不是在 midpoint 处取。
-    time_jacobian = mass_coefficient(E_guess, model)
+    if picard_mass_mode == "q_derivative":
+        time_jacobian = mass_coefficient(E_guess, model)
+    elif picard_mass_mode == "frozen_coeff":
+        time_jacobian = frozen_storage_coefficient(E_guess, model)
+    elif picard_mass_mode == "midpoint_q_derivative":
+        time_jacobian = mass_coefficient(E_for_coeff, model)
+    else:
+        raise ValueError(f"Unknown picard_mass_mode: {picard_mass_mode}")
 
     D_cell, Dx, Dy = build_frozen_diffusion(
         E_for_coeff,
@@ -195,6 +211,8 @@ def build_picard_linearization(
         theta=0.5,
         boundary_config=problem["boundary"],
         smoother=mg_smoother,
+        pre_smooths=mg_pre_smooths,
+        post_smooths=mg_post_smooths,
     )
     return A_mv, precond
 
@@ -212,6 +230,7 @@ def picard_step(
     """
     E = E_old.copy()
     linear_iters_total = 0
+    linear_iters_by_nonlinear = []
     converged = False
     final_residual_norm = np.inf
 
@@ -228,6 +247,9 @@ def picard_step(
             problem,
             run_cfg.model,
             mg_smoother=getattr(solver_cfg, "mg_smoother", "jacobi"),
+            mg_pre_smooths=getattr(solver_cfg, "mg_pre_smooths", 3),
+            mg_post_smooths=getattr(solver_cfg, "mg_post_smooths", 3),
+            picard_mass_mode=getattr(solver_cfg, "picard_mass_mode", "q_derivative"),
         )
         rhs = -R.ravel()
         x, info = gmres(
@@ -239,6 +261,7 @@ def picard_step(
             restart=solver_cfg.gmres_restart,
         )
         linear_iters_total += info["iters"]
+        linear_iters_by_nonlinear.append(info["iters"])
         dE = x.reshape(E.shape)
         E, _ = _damped_update(
             E,
@@ -262,6 +285,7 @@ def picard_step(
         linear_iters_total=linear_iters_total,
         converged=converged,
         final_residual_norm=final_residual_norm,
+        linear_iters_by_nonlinear=linear_iters_by_nonlinear,
     )
 
 
@@ -278,6 +302,7 @@ def nk2_step(
     """
     E = E_old.copy()
     linear_iters_total = 0
+    linear_iters_by_nonlinear = []
     converged = False
     final_residual_norm = np.inf
 
@@ -309,10 +334,13 @@ def nk2_step(
             problem,
             run_cfg.model,
             mg_smoother=getattr(solver_cfg, "mg_smoother", "jacobi"),
+            mg_pre_smooths=getattr(solver_cfg, "mg_pre_smooths", 3),
+            mg_post_smooths=getattr(solver_cfg, "mg_post_smooths", 3),
+            picard_mass_mode=getattr(solver_cfg, "picard_mass_mode", "q_derivative"),
         )
-        M = precond.apply if solver_cfg.use_multigrid_preconditioner else None
 
         rhs = -R.ravel()
+        M = precond.apply if solver_cfg.use_multigrid_preconditioner else None
         dE_flat, info = gmres(
             J_mv,
             rhs,
@@ -322,6 +350,7 @@ def nk2_step(
             restart=solver_cfg.gmres_restart,
         )
         linear_iters_total += info["iters"]
+        linear_iters_by_nonlinear.append(info["iters"])
         dE = dE_flat.reshape(E.shape)
         E, _ = _damped_update(
             E,
@@ -344,6 +373,7 @@ def nk2_step(
         linear_iters_total=linear_iters_total,
         converged=converged,
         final_residual_norm=final_residual_norm,
+        linear_iters_by_nonlinear=linear_iters_by_nonlinear,
     )
 
 

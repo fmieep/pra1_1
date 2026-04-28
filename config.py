@@ -29,6 +29,11 @@ class SolverConfig:
     # 新增：是否强制能量为正
     enforce_positive_update: bool = True
     mg_smoother: str = "jacobi"
+    mg_pre_smooths: int = 3
+    mg_post_smooths: int = 3
+    # "q_derivative": current Newton-like Q'(E) time term.
+    # "frozen_coeff": Picard-style frozen bracket coefficient.
+    picard_mass_mode: str = "q_derivative"
 
 @dataclass
 class RunConfig:
@@ -42,6 +47,10 @@ class RunConfig:
     e_floor: float = 1.0
      # 新增：论文复现时建议为 0；工程稳健运行可以设为 8
     max_step_retries: int = 0
+    progress_interval: int = 100
+    checkpoint_path: str | None = None
+    checkpoint_interval: int = 0
+    resume_from_checkpoint: bool = False
 
 def default_run_config(model: str, nx: int, ny: int, eta_target: float) -> RunConfig:
     """Return a paper-inspired default RunConfig."""

@@ -40,6 +40,21 @@ def storage_quantity(E: np.ndarray, model: str) -> np.ndarray:
     return alpha * E + (1.0 - alpha) * E_safe ** 0.25
 
 
+def frozen_storage_coefficient(E: np.ndarray, model: str) -> np.ndarray:
+    """Return the Picard-style frozen coefficient multiplying E.
+
+    The governing transient quantity can be written as
+        [alpha + (1-alpha) E^(-3/4)] E.
+
+    Freezing only the bracketed coefficient gives this value.  This differs from
+    the Newton derivative dQ/dE for M2 by a factor of four.
+    """
+    alpha = model_alpha(model)
+    if alpha == 1.0:
+        return np.ones_like(E)
+    return alpha + (1.0 - alpha) * np.maximum(E, 1e-30) ** (-0.75)
+
+
 def mass_coefficient(E: np.ndarray, model: str) -> np.ndarray:
     """Return d(storage_quantity)/dE for the frozen time linearization.
 

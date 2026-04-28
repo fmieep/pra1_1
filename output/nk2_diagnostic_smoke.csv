@@ -1,0 +1,2 @@
+variant,model,eta,grid,converged,steps,avg_linear,paper_linear,linear_delta,avg_nonlinear,paper_nonlinear,nonlinear_delta,avg_linear_per_newton_solve,max_linear,max_nonlinear,elapsed_sec,failure_reason
+base,M1,0.1,32,True,428,4.864485981308412,2.57,2.2944859813084117,3.2686915887850465,3.42,-0.15130841121495342,1.488205861329521,6,4,5.375284699955955,

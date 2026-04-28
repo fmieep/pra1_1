@@ -3,7 +3,7 @@ from problem import build_problem
 from driver import run_simulation
 import numpy as np
 import time
-
+import os
 # =========================================================
 # 这里是“总开关”：改这里就行
 # =========================================================
@@ -13,15 +13,15 @@ MODE = "batch"  # 可选: "single" 或 "batch"
 # ---------- 单个测试参数 ----------
 METHOD = "nk2"  # 可选: "nk2" 或 "picard"
 MODEL = "M2"  # 可选: "M1", "M2", "M3"
-ETA = 0.50 # 常用: 0.10 或 0.50
+ETA = 0.50  # 常用: 0.10 或 0.50
 NX = 128
 NY = 128
 
 
 # ---------- 求解器细参数 ----------
-NONLINEAR_TOL = 1e-6
+NONLINEAR_TOL = 1.2e-6
 LINEAR_TOL_FACTOR = 3e-3
-MAX_NONLINEAR_ITERS = 50
+MAX_NONLINEAR_ITERS = 60
 MAX_LINEAR_ITERS = 100
 GMRES_RESTART = MAX_LINEAR_ITERS
 RHO_JFNK = 1e-8
@@ -29,6 +29,13 @@ USE_MG_PRECONDITIONER = True
 MG_SMOOTHER = "jacobi"  # 可选: "jacobi", "gs", "sgs"
 JFNK_EPS_MODE = "normalized"
 DAMPING_NORM = "linf"
+MG_PRE_SMOOTHS = 3
+MG_POST_SMOOTHS = 3
+PROGRESS_INTERVAL = 1000
+CHECKPOINT_INTERVAL = 1000
+RESUME_FROM_CHECKPOINT = False
+CHECKPOINT_DIR = "checkpoints"
+
 # ---------- 运行细参数 ----------
 # 是否覆盖 default_run_config 里的默认值
 OVERRIDE_T_END = False
@@ -41,10 +48,10 @@ DT_GROWTH_LIMIT = 1.1
 E_FLOOR = 1.0
 
 # ---------- 批量测试参数 ----------
-BATCH_METHODS = ["nk2"]
-BATCH_MODELS = ["M1","M2", "M3"]
-BATCH_ETAS = [0.10, 0.50]
-BATCH_GRIDS = [32, 64, 128]
+BATCH_METHODS = ["nk2","picard"]
+BATCH_MODELS = ["M1","M2","M3"]
+BATCH_ETAS = [0.10,0.50]
+BATCH_GRIDS = [32,64,128]
 
 # =========================================================
 # 下面一般不用改
@@ -57,14 +64,22 @@ def safe_average(values):
 
 def make_run_config(model, nx, ny, eta):
     run_cfg = default_run_config(model=model, nx=nx, ny=ny, eta_target=eta)
-
+    run_cfg.progress_interval = PROGRESS_INTERVAL
     if OVERRIDE_T_END:
         run_cfg.t_end = T_END
     if OVERRIDE_DT_INIT:
         run_cfg.dt_init = DT_INIT
-
+    
     run_cfg.dt_growth_limit = DT_GROWTH_LIMIT
     run_cfg.e_floor = E_FLOOR
+    os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+
+    run_cfg.checkpoint_interval = CHECKPOINT_INTERVAL
+    run_cfg.resume_from_checkpoint = RESUME_FROM_CHECKPOINT
+    run_cfg.checkpoint_path = os.path.join(
+        CHECKPOINT_DIR,
+        f"{model}_eta{eta}_grid{nx}_method{METHOD}.npz"
+    )
     return run_cfg
 
 
@@ -81,6 +96,8 @@ def make_solver_config(method):
         mg_smoother=MG_SMOOTHER,
         jfnk_eps_mode=JFNK_EPS_MODE,
         damping_norm=DAMPING_NORM,
+        mg_pre_smooths=MG_PRE_SMOOTHS,
+        mg_post_smooths=MG_POST_SMOOTHS,
     )
 
 
@@ -120,6 +137,8 @@ def print_case_summary(method, model, eta, nx, ny, result, solver_cfg):
     print(f"eta_target       = {eta}")
     print(f"grid             = {nx} x {ny}")
     print(f"mg smoother      = {solver_cfg.mg_smoother}")
+    print(f"mg pre smooths   = {solver_cfg.mg_pre_smooths}")
+    print(f"mg post smooths  = {solver_cfg.mg_post_smooths}")
     print(f"jfnk eps mode    = {solver_cfg.jfnk_eps_mode}")
     print(f"damping norm     = {solver_cfg.damping_norm}")
     print(f"gmres restart    = {solver_cfg.gmres_restart}")
@@ -189,9 +208,6 @@ def run_batch():
                         }
                     )
 
-    print("\n" + "#" * 80)
-    print("批量测试汇总")
-    print("#" * 80)
     print("\n" + "#" * 80)
     print("批量测试汇总")
     print("#" * 80)

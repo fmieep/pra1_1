@@ -1,4 +1,5 @@
 """Linear solvers and Picard-type multigrid preconditioning."""
+
 from __future__ import annotations
 import numpy as np
 from discretization import (
@@ -8,6 +9,77 @@ from discretization import (
     compute_face_diffusion,
     coarsen_cell_center,
 )
+
+def gmres_scipy_right(matvec, b, M=None, x0=None, tol=1e-8, maxiter=100, restart=30):
+    """Right-preconditioned GMRES using scipy.sparse.linalg.gmres.
+
+    Solves:
+        A M^{-1} y = b,
+    then returns:
+        x = M^{-1} y.
+
+    This keeps the same right-preconditioned structure as the paper algorithm.
+    """
+    from scipy.sparse.linalg import LinearOperator, gmres as scipy_gmres
+
+    n = b.size
+    bnorm = max(np.linalg.norm(b), 1e-30)
+
+    if x0 is not None:
+        # 当前 methods.py 没有传 x0，所以先不支持，避免误用。
+        raise NotImplementedError("gmres_scipy_right currently assumes x0=None.")
+
+    def apply_M(v):
+        return v.copy() if M is None else M(v)
+
+    def B_mv(y):
+        return matvec(apply_M(y))
+
+    B = LinearOperator((n, n), matvec=B_mv, dtype=float)
+
+    residual_history = []
+
+    def callback(res):
+        try:
+            residual_history.append(float(res) * bnorm)
+        except Exception:
+            pass
+
+    try:
+        y, info = scipy_gmres(
+            B,
+            b,
+            restart=restart,
+            maxiter=maxiter,
+            rtol=0.0,
+            atol=tol,
+            callback=callback,
+            callback_type="legacy",
+        )
+    except TypeError:
+        # 兼容旧版 scipy
+        y, info = scipy_gmres(
+            B,
+            b,
+            restart=restart,
+            maxiter=maxiter,
+            tol=tol / bnorm,
+            callback=callback,
+        )
+
+    x = apply_M(y)
+    final_res = np.linalg.norm(b - matvec(x))
+
+    if len(residual_history) == 0:
+        residual_history = [final_res]
+
+    return x, {
+        "iters": len(residual_history),
+        "residual_history": residual_history,
+        "final_residual_norm": final_res,
+        "converged": final_res < tol,
+    }
+
 
 
 def gmres(matvec, b, M=None, x0=None, tol=1e-8, maxiter=100, restart=30):
@@ -63,8 +135,8 @@ def gmres(matvec, b, M=None, x0=None, tol=1e-8, maxiter=100, restart=30):
             if H[j + 1, j] > 0 and j + 1 < restart + 1:
                 V[:, j + 1] = w / H[j + 1, j]
 
-            y, *_ = np.linalg.lstsq(H[:j + 2, :j + 1], g[:j + 2], rcond=None)
-            x_trial = x + Z[:, :j + 1] @ y
+            y, *_ = np.linalg.lstsq(H[: j + 2, : j + 1], g[: j + 2], rcond=None)
+            x_trial = x + Z[:, : j + 1] @ y
             r_trial = b - matvec(x_trial)
             res = np.linalg.norm(r_trial)
             residual_history.append(res)
@@ -144,11 +216,14 @@ def smooth_jacobi(A_mv, diag, rhs, x, omega=0.8, n_sweeps=2):
         x = x + omega * r / np.maximum(diag, 1e-30)
     return x
 
-def _gauss_seidel_sweep(level: dict,
-                        rhs: np.ndarray,
-                        x: np.ndarray,
-                        omega: float = 1.0,
-                        reverse: bool = False) -> np.ndarray:
+
+def _gauss_seidel_sweep(
+    level: dict,
+    rhs: np.ndarray,
+    x: np.ndarray,
+    omega: float = 1.0,
+    reverse: bool = False,
+) -> np.ndarray:
     """One lexicographic Gauss-Seidel sweep for the Picard operator.
 
     The Picard operator has the form
@@ -204,12 +279,14 @@ def _gauss_seidel_sweep(level: dict,
     return x
 
 
-def smooth_gauss_seidel(level: dict,
-                        rhs: np.ndarray,
-                        x: np.ndarray,
-                        omega: float = 1.0,
-                        n_sweeps: int = 2,
-                        symmetric: bool = False) -> np.ndarray:
+def smooth_gauss_seidel(
+    level: dict,
+    rhs: np.ndarray,
+    x: np.ndarray,
+    omega: float = 1.0,
+    n_sweeps: int = 2,
+    symmetric: bool = False,
+) -> np.ndarray:
     """Pointwise Gauss-Seidel smoother.
 
     symmetric=False:
@@ -228,6 +305,7 @@ def smooth_gauss_seidel(level: dict,
 
     return x
 
+
 def restrict_full_weighting(r_fine: np.ndarray) -> np.ndarray:
     """Restriction stage of the V-cycle: 2x2 averaging to the coarse grid."""
     nx, ny = r_fine.shape
@@ -239,9 +317,7 @@ def prolong_piecewise_constant(e_coarse: np.ndarray) -> np.ndarray:
     return np.repeat(np.repeat(e_coarse, 2, axis=0), 2, axis=1)
 
 
-def _coarsen_face_x(Dx_fine: np.ndarray,
-                    dx_fine: float,
-                    dy_fine: float) -> np.ndarray:
+def _coarsen_face_x(Dx_fine: np.ndarray, dx_fine: float, dy_fine: float) -> np.ndarray:
     """Coarsen x-face coefficients by finite-volume transmissibility merging.
 
     Dx_fine shape: (nx + 1, ny)
@@ -286,9 +362,7 @@ def _coarsen_face_x(Dx_fine: np.ndarray,
     return Dx_coarse
 
 
-def _coarsen_face_y(Dy_fine: np.ndarray,
-                    dx_fine: float,
-                    dy_fine: float) -> np.ndarray:
+def _coarsen_face_y(Dy_fine: np.ndarray, dx_fine: float, dy_fine: float) -> np.ndarray:
     """Coarsen y-face coefficients by finite-volume transmissibility merging.
 
     Dy_fine shape: (nx, ny + 1)
@@ -331,6 +405,7 @@ def _coarsen_face_y(Dy_fine: np.ndarray,
 
     return Dy_coarse
 
+
 def _grid_from_shape_and_spacing(shape: tuple[int, int], dx: float, dy: float) -> dict:
     return {"dx": dx, "dy": dy, "nx": shape[0], "ny": shape[1]}
 
@@ -346,10 +421,11 @@ def _apply_picard_operator(x: np.ndarray, level: dict) -> np.ndarray:
         boundary_flux=boundary_flux,
     )
     return level["mass"] * x / level["dt"] - level["theta"] * diff
-def smooth_level(level: dict,
-                 rhs: np.ndarray,
-                 x: np.ndarray,
-                 n_sweeps: int = 2) -> np.ndarray:
+
+
+def smooth_level(
+    level: dict, rhs: np.ndarray, x: np.ndarray, n_sweeps: int = 2
+) -> np.ndarray:
     """Dispatch the smoothing stage according to level['smoother']."""
     smoother = level.get("smoother", "jacobi").lower()
 
@@ -385,9 +461,9 @@ def smooth_level(level: dict,
         )
 
     raise ValueError(
-        f"Unknown MG smoother '{smoother}'. "
-        "Use 'jacobi', 'gs', or 'sgs'."
+        f"Unknown MG smoother '{smoother}'. " "Use 'jacobi', 'gs', or 'sgs'."
     )
+
 
 def _picard_operator_diag(level: dict) -> np.ndarray:
     """Approximate diagonal used by the Jacobi smoother."""
@@ -414,23 +490,31 @@ def _picard_operator_diag(level: dict) -> np.ndarray:
     x_contrib[0, :] = Dx[1, :] / dx2 + left_beta / dx
     x_contrib[-1, :] = Dx[nx - 1, :] / dx2 + right_beta / dx
     if nx > 2:
-        x_contrib[1:-1, :] = (Dx[1:nx - 1, :] + Dx[2:nx, :]) / dx2
+        x_contrib[1:-1, :] = (Dx[1 : nx - 1, :] + Dx[2:nx, :]) / dx2
 
     # y direction
     y_contrib[:, 0] = Dy[:, 1] / dy2
     y_contrib[:, -1] = Dy[:, ny - 1] / dy2
     if ny > 2:
-        y_contrib[:, 1:-1] = (Dy[:, 1:ny - 1] + Dy[:, 2:ny]) / dy2
+        y_contrib[:, 1:-1] = (Dy[:, 1 : ny - 1] + Dy[:, 2:ny]) / dy2
 
     diag = diag + theta * (x_contrib + y_contrib)
     return diag
-
-
-def _build_mg_levels(mass: np.ndarray, D_cell: np.ndarray, dx: float, dy: float,
-                     Dx: np.ndarray | None, Dy: np.ndarray | None,
-                     dt: float, theta: float = 0.5, min_coarse_size: int = 4,
-                     boundary_config: dict | None = None,
-                     smoother: str = "jacobi") -> list[dict]:
+def _build_mg_levels(
+    mass: np.ndarray,
+    D_cell: np.ndarray,
+    dx: float,
+    dy: float,
+    Dx: np.ndarray | None,
+    Dy: np.ndarray | None,
+    dt: float,
+    theta: float = 0.5,
+    min_coarse_size: int = 4,
+    boundary_config: dict | None = None,
+    smoother: str = "jacobi",
+    pre_smooths: int = 3,
+    post_smooths: int = 3,
+) -> list[dict]:
     """Construct a simple coefficient hierarchy for Picard-type multigrid."""
     levels = []
     mass_level = mass.copy()
@@ -453,10 +537,14 @@ def _build_mg_levels(mass: np.ndarray, D_cell: np.ndarray, dx: float, dy: float,
             "dy": dy_level,
             "dt": dt,
             "theta": theta,
-            "boundary_data": build_boundary_data({"boundary": boundary_config}, grid_level, Dx_level),
+            "boundary_data": build_boundary_data(
+                {"boundary": boundary_config}, grid_level, Dx_level
+            ),
             "smoother": smoother,
             "jacobi_omega": 0.8,
             "gs_omega": 1.0,
+            "pre_smooths": pre_smooths,
+            "post_smooths": post_smooths,
         }
         level["diag"] = _picard_operator_diag(level)
         levels.append(level)
@@ -490,17 +578,15 @@ def _assemble_dense_operator(level: dict) -> np.ndarray:
 
 
 def coarse_solve(level: dict, rhs: np.ndarray, x0: np.ndarray) -> np.ndarray:
-    """Solve the coarsest Picard system.
-
-    On the coarsest level, use a dense direct solve. This is closer to a
-    standard V-cycle than replacing the coarse solve by a few Jacobi sweeps.
-    """
+    """Solve the coarsest Picard system with cached dense matrix."""
     shape = rhs.shape
     n = rhs.size
 
-    # For 4x4 or 8x8 coarse grids, direct solve is cheap enough.
     if n <= 64:
-        A = _assemble_dense_operator(level)
+        if "_A_dense" not in level:
+            level["_A_dense"] = _assemble_dense_operator(level)
+
+        A = level["_A_dense"]
         b = rhs.ravel()
 
         try:
@@ -510,11 +596,12 @@ def coarse_solve(level: dict, rhs: np.ndarray, x0: np.ndarray) -> np.ndarray:
 
         return x.reshape(shape)
 
-    # Fallback if the coarsest grid is unexpectedly large.
     return smooth_level(level, rhs, x0, n_sweeps=50)
 
 
-def v_cycle(levels: list[dict], level_idx: int, rhs: np.ndarray, x0: np.ndarray) -> np.ndarray:
+def v_cycle(
+    levels: list[dict], level_idx: int, rhs: np.ndarray, x0: np.ndarray
+) -> np.ndarray:
     """One geometric V-cycle for the frozen Picard operator A.
 
     This approximates A^{-1} rhs and is used as the right preconditioner
@@ -524,7 +611,7 @@ def v_cycle(levels: list[dict], level_idx: int, rhs: np.ndarray, x0: np.ndarray)
     A_mv = lambda u: _apply_picard_operator(u, level)
 
     # 1. Pre-smoothing
-    x = smooth_level(level, rhs, x0, n_sweeps=3)
+    x = smooth_level(level, rhs, x0, n_sweeps=level.get("pre_smooths", 3))
 
     # 2. Coarsest-grid solve
     if level_idx == len(levels) - 1 or min(rhs.shape) <= 4:
@@ -542,16 +629,29 @@ def v_cycle(levels: list[dict], level_idx: int, rhs: np.ndarray, x0: np.ndarray)
     x = x + prolong_piecewise_constant(error_coarse)
 
     # 6. Post-smoothing
-    x = smooth_level(level, rhs, x, n_sweeps=3)
+    x = smooth_level(level, rhs, x, n_sweeps=level.get("post_smooths", 3))
 
     return x
 
+
 class PicardMGPreconditioner:
     """Picard-type multigrid preconditioner for Newton-Krylov."""
-    def __init__(self, mass: np.ndarray, D_cell: np.ndarray, dx: float, dy: float,
-                 dt: float, theta: float = 0.5, boundary_config: dict | None = None,
-                 Dx: np.ndarray | None = None, Dy: np.ndarray | None = None,
-                 smoother: str = "jacobi"):
+
+    def __init__(
+        self,
+        mass: np.ndarray,
+        D_cell: np.ndarray,
+        dx: float,
+        dy: float,
+        dt: float,
+        theta: float = 0.5,
+        boundary_config: dict | None = None,
+        Dx: np.ndarray | None = None,
+        Dy: np.ndarray | None = None,
+        pre_smooths: int = 3,
+        post_smooths: int = 3,
+        smoother: str = "jacobi",
+    ):
         self.shape = mass.shape
         self.smoother = smoother
 
@@ -569,6 +669,8 @@ class PicardMGPreconditioner:
             theta=theta,
             boundary_config=boundary_config,
             smoother=smoother,
+            pre_smooths=pre_smooths,
+            post_smooths=post_smooths,
         )
 
     def apply(self, v: np.ndarray) -> np.ndarray:

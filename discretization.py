@@ -265,6 +265,47 @@ def apply_diffusion_from_faces(E: np.ndarray,
     return -((qx[1:, :] - qx[:-1, :]) / dx +
              (qy[:, 1:] - qy[:, :-1]) / dy)
 
+
+def apply_diffusion_dirichlet_from_faces(
+    E: np.ndarray,
+    grid: dict,
+    Dx: np.ndarray,
+    Dy: np.ndarray,
+    boundary_values: dict,
+) -> np.ndarray:
+    """Apply div(D grad(E)) with test-only Dirichlet face values.
+
+    This helper is meant for manufactured-solution tests of the finite-volume
+    stencil. It keeps the production Robin/symmetry path separate while giving
+    the discretization layer a clean, independently verifiable Dirichlet mode.
+
+    boundary_values entries may be scalars or arrays:
+        left/right shape (ny,), bottom/top shape (nx,).
+    """
+    dx = grid["dx"]
+    dy = grid["dy"]
+    nx, ny = E.shape
+
+    left = _broadcast_boundary_value(boundary_values["left"], ny)
+    right = _broadcast_boundary_value(boundary_values["right"], ny)
+    bottom = _broadcast_boundary_value(boundary_values["bottom"], nx)
+    top = _broadcast_boundary_value(boundary_values["top"], nx)
+
+    qx = np.zeros((nx + 1, ny), dtype=E.dtype)
+    qy = np.zeros((nx, ny + 1), dtype=E.dtype)
+
+    qx[0, :] = -Dx[0, :] * (E[0, :] - left) / (0.5 * dx)
+    qx[-1, :] = -Dx[-1, :] * (right - E[-1, :]) / (0.5 * dx)
+    qx[1:nx, :] = -Dx[1:nx, :] * (E[1:nx, :] - E[:-1, :]) / dx
+
+    qy[:, 0] = -Dy[:, 0] * (E[:, 0] - bottom) / (0.5 * dy)
+    qy[:, -1] = -Dy[:, -1] * (top - E[:, -1]) / (0.5 * dy)
+    qy[:, 1:ny] = -Dy[:, 1:ny] * (E[:, 1:ny] - E[:, :-1]) / dy
+
+    return -((qx[1:, :] - qx[:-1, :]) / dx +
+             (qy[:, 1:] - qy[:, :-1]) / dy)
+
+
 def diffusion_operator_split(E_for_grad: np.ndarray,
                              E_for_coeff: np.ndarray,
                              problem: dict,
@@ -310,7 +351,7 @@ def build_frozen_diffusion(E: np.ndarray,
     """
     Z = problem["Z"]
 
-    if model != "M3":
+    if model != "M3" or not problem.get("use_m3_limiter", True):
         D_cell = diffusion_coefficient(E, Z, model)
         Dx, Dy = compute_face_diffusion(D_cell)
         return D_cell, Dx, Dy
