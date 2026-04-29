@@ -13,7 +13,7 @@
       line-height: 1.55;
     }
     main {
-      max-width: 1180px;
+      max-width: 1220px;
       margin: 0 auto;
       padding: 34px 24px 56px;
     }
@@ -26,10 +26,11 @@
     h2 { font-size: 20px; margin: 30px 0 12px; }
     h3 { font-size: 16px; margin: 22px 0 8px; }
     p { margin: 8px 0; }
+    code { font-family: Consolas, "Courier New", monospace; font-size: 13px; }
     .muted { color: #64748b; }
     .summary {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
       gap: 12px;
       margin: 20px 0 8px;
     }
@@ -39,18 +40,9 @@
       border-radius: 8px;
       padding: 14px 16px;
     }
-    .label {
-      color: #64748b;
-      font-size: 13px;
-      margin-bottom: 4px;
-    }
-    .value {
-      font-size: 22px;
-      font-weight: 700;
-    }
-    .paper-block {
-      margin-top: 18px;
-    }
+    .label { color: #64748b; font-size: 13px; margin-bottom: 4px; }
+    .value { font-size: 22px; font-weight: 700; }
+    .paper-block { margin-top: 18px; overflow-x: auto; }
     table.booktabs {
       width: 100%;
       border-collapse: collapse;
@@ -65,73 +57,74 @@
       vertical-align: middle;
       white-space: nowrap;
     }
-    .booktabs thead tr:first-child th {
-      border-bottom: 1px solid #111827;
-    }
+    .booktabs thead tr:first-child th { border-bottom: 1px solid #111827; }
     .booktabs thead tr:last-child th {
       border-bottom: 1px solid #9ca3af;
       color: #374151;
       font-weight: 700;
     }
-    .booktabs tbody tr + tr td {
-      border-top: 1px solid #e5e7eb;
-    }
+    .booktabs tbody tr + tr td { border-top: 1px solid #e5e7eb; }
     .booktabs .scaling-row td {
       border-top: 1.5px solid #111827;
       background: #f9fafb;
       font-weight: 700;
     }
-    .good {
-      color: #166534;
-      font-weight: 700;
-    }
-    .warn {
-      color: #a16207;
-      font-weight: 700;
-    }
-    .bad {
-      color: #991b1b;
-      font-weight: 700;
-    }
-    .missing {
-      color: #6b7280;
-      font-weight: 700;
-    }
+    .compact th, .compact td { padding: 7px 10px; }
+    .good { color: #166534; font-weight: 700; }
+    .warn { color: #a16207; font-weight: 700; }
+    .bad { color: #991b1b; font-weight: 700; }
+    .missing { color: #6b7280; font-weight: 700; }
     .note {
       background: #ffffff;
       border-left: 4px solid #64748b;
       padding: 10px 14px;
       margin-top: 14px;
     }
-    code {
-      font-family: Consolas, "Courier New", monospace;
-      font-size: 13px;
-    }
   </style>
 </head>
 <body>
   <main>
     <h1>论文迭代结果对比</h1>
-    <p class="muted">对照论文 Tables XIII-XVI 的 Newton-Krylov 平均线性/非线性迭代数；本代码结果来自 <code>checkpoints/*.npz</code> 中的 NK2 checkpoint。</p>
+    <p class="muted">结果来自 <code>checkpoints/*.npz</code>。NK2 对照论文 Tables XIII-XVI；M3 Picard 对照论文 Tables IX-XII。</p>
 
     <div class="summary">
-      <div class="card"><div class="label">对比项数</div><div class="value">24</div></div>
-      <div class="card"><div class="label">有本地结果</div><div class="value">22</div></div>
-      <div class="card"><div class="label">完整算例</div><div class="value">19</div></div>
-      <div class="card"><div class="label">线性平均绝对误差</div><div class="value">52.6%</div></div>
-      <div class="card"><div class="label">非线性平均绝对误差</div><div class="value">10.2%</div></div>
+      <div class="card"><div class="label">对比项数</div><div class="value">30</div></div>
+      <div class="card"><div class="label">有本地结果</div><div class="value">28</div></div>
+      <div class="card"><div class="label">完整算例</div><div class="value">25</div></div>
+      <div class="card"><div class="label">线性平均绝对误差</div><div class="value">42.5%</div></div>
+      <div class="card"><div class="label">非线性平均绝对误差</div><div class="value">11.2%</div></div>
       <div class="card"><div class="label">线性误差 <= 10%</div><div class="value">6</div></div>
-      <div class="card"><div class="label">非线性误差 <= 10%</div><div class="value">10</div></div>
+      <div class="card"><div class="label">非线性误差 <= 10%</div><div class="value">15</div></div>
     </div>
 
     <section class="note">
-      <p>判断规则：相对误差绝对值不超过 10% 记为“接近”；超过 10% 时，正值表示本代码迭代数偏高，负值表示偏低。Scaling exponent 按论文定义为计算工作量关于自由度 N 的指数；等价于先拟合平均迭代数关于 N 的幂次，再加 1。本代码 Scaling exponent 只统计已经运行到论文终止时间的完整算例。</p>
+      <p>判断规则：相对误差绝对值不超过 10% 记为“接近”；正值表示本代码迭代数偏高，负值表示偏低。Scaling exponent 按论文的工作量指数计算，即拟合平均迭代数关于自由度 N 的幂次后再加 1。</p>
     </section>
 
-    <h2>三线表对比</h2>
     
     <section class="paper-block">
-      <h3>M1, eta = 0.10</h3>
+      <h2>M3 方法总览</h2>
+      <table class="booktabs compact">
+        <thead>
+          <tr>
+            <th>eta</th>
+            <th>方法</th>
+            <th>完整算例数</th>
+            <th>平均线性迭代</th>
+            <th>平均非线性迭代</th>
+            <th>线性 scaling</th>
+            <th>非线性 scaling</th>
+          </tr>
+        </thead>
+        <tbody><tr><td>0.10</td><td>Newton-Krylov / NK2</td><td>4</td><td>5.62</td><td>3.21</td><td>1.2808</td><td>1.1385</td></tr><tr><td>0.10</td><td>Picard</td><td>3</td><td>6.13</td><td>6.13</td><td>1.2427</td><td>1.2427</td></tr><tr><td>0.50</td><td>Newton-Krylov / NK2</td><td>3</td><td>9.40</td><td>3.79</td><td>1.2859</td><td>1.1439</td></tr><tr><td>0.50</td><td>Picard</td><td>3</td><td>20.53</td><td>13.48</td><td>1.4811</td><td>1.3003</td></tr></tbody>
+      </table>
+    </section>
+    
+
+    <h2>Newton-Krylov / NK2 对比</h2>
+    
+    <section class="paper-block">
+      <h3>Newton-Krylov / NK2：M1, eta = 0.10</h3>
       <table class="booktabs">
         <thead>
           <tr>
@@ -139,6 +132,7 @@
             <th rowspan="2">状态</th>
             <th colspan="5">线性迭代</th>
             <th colspan="5">非线性迭代</th>
+            <th rowspan="2">时间步数</th>
           </tr>
           <tr>
             <th>论文</th>
@@ -154,14 +148,14 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>32 x 32</td><td class="good">完整</td><td>2.57</td><td>4.86</td><td class="bad">2.29</td><td class="bad">89.3%</td><td class="bad">偏高</td><td>3.42</td><td>3.27</td><td class="good">-0.15</td><td class="good">-4.4%</td><td class="good">接近</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>3.02</td><td>5.29</td><td class="bad">2.27</td><td class="bad">75.2%</td><td class="bad">偏高</td><td>3.57</td><td>3.48</td><td class="good">-0.09</td><td class="good">-2.6%</td><td class="good">接近</td></tr><tr><td>128 x 128</td><td class="good">完整</td><td>3.40</td><td>5.77</td><td class="bad">2.37</td><td class="bad">69.7%</td><td class="bad">偏高</td><td>3.71</td><td>3.62</td><td class="good">-0.09</td><td class="good">-2.3%</td><td class="good">接近</td></tr><tr><td>256 x 256</td><td class="good">完整</td><td>3.39</td><td>6.68</td><td class="bad">3.29</td><td class="bad">97.2%</td><td class="bad">偏高</td><td>3.61</td><td>3.97</td><td class="good">0.36</td><td class="good">10.0%</td><td class="good">接近</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.0668</td><td>1.0750</td><td class="good">0.0082</td><td class="good">0.8%</td><td class="good">接近</td><td>1.0140</td><td>1.0451</td><td class="good">0.0311</td><td class="good">3.1%</td><td class="good">接近</td></tr>
+          <tr><td>32 x 32</td><td class="good">完整</td><td>2.57</td><td>4.86</td><td class="bad">2.29</td><td class="bad">89.3%</td><td class="bad">偏高</td><td>3.42</td><td>3.27</td><td class="good">-0.15</td><td class="good">-4.4%</td><td class="good">接近</td><td>428</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>3.02</td><td>5.29</td><td class="bad">2.27</td><td class="bad">75.2%</td><td class="bad">偏高</td><td>3.57</td><td>3.48</td><td class="good">-0.09</td><td class="good">-2.6%</td><td class="good">接近</td><td>552</td></tr><tr><td>128 x 128</td><td class="good">完整</td><td>3.40</td><td>5.77</td><td class="bad">2.37</td><td class="bad">69.7%</td><td class="bad">偏高</td><td>3.71</td><td>3.62</td><td class="good">-0.09</td><td class="good">-2.3%</td><td class="good">接近</td><td>690</td></tr><tr><td>256 x 256</td><td class="good">完整</td><td>3.39</td><td>6.68</td><td class="bad">3.29</td><td class="bad">97.2%</td><td class="bad">偏高</td><td>3.61</td><td>3.97</td><td class="good">0.36</td><td class="good">10.0%</td><td class="good">接近</td><td>841</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.0668</td><td>1.0750</td><td class="good">0.0082</td><td class="good">0.8%</td><td class="good">接近</td><td>1.0140</td><td>1.0451</td><td class="good">0.0311</td><td class="good">3.1%</td><td class="good">接近</td><td>-</td></tr>
         </tbody>
       </table>
     </section>
     
 
     <section class="paper-block">
-      <h3>M2, eta = 0.10</h3>
+      <h3>Newton-Krylov / NK2：M2, eta = 0.10</h3>
       <table class="booktabs">
         <thead>
           <tr>
@@ -169,6 +163,7 @@
             <th rowspan="2">状态</th>
             <th colspan="5">线性迭代</th>
             <th colspan="5">非线性迭代</th>
+            <th rowspan="2">时间步数</th>
           </tr>
           <tr>
             <th>论文</th>
@@ -184,14 +179,14 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>32 x 32</td><td class="good">完整</td><td>7.72</td><td>8.24</td><td class="good">0.52</td><td class="good">6.8%</td><td class="good">接近</td><td>4.53</td><td>4.12</td><td class="good">-0.41</td><td class="good">-9.1%</td><td class="good">接近</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>9.01</td><td>8.88</td><td class="good">-0.13</td><td class="good">-1.5%</td><td class="good">接近</td><td>4.62</td><td>4.38</td><td class="good">-0.24</td><td class="good">-5.2%</td><td class="good">接近</td></tr><tr><td>128 x 128</td><td class="missing">未完成/缺失</td><td>10.40</td><td>9.83</td><td class="good">-0.57</td><td class="good">-5.4%</td><td class="good">接近</td><td>4.66</td><td>4.92</td><td class="good">0.26</td><td class="good">5.7%</td><td class="good">接近</td></tr><tr><td>256 x 256</td><td class="missing">未完成/缺失</td><td>11.00</td><td>-</td><td class="missing">-</td><td class="missing">-%</td><td class="missing">缺失</td><td>4.62</td><td>-</td><td class="missing">-</td><td class="missing">-%</td><td class="missing">缺失</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.0870</td><td>1.0533</td><td class="good">-0.0337</td><td class="good">-3.1%</td><td class="good">接近</td><td>1.0050</td><td>1.0444</td><td class="good">0.0394</td><td class="good">3.9%</td><td class="good">接近</td></tr>
+          <tr><td>32 x 32</td><td class="good">完整</td><td>7.72</td><td>8.24</td><td class="good">0.52</td><td class="good">6.8%</td><td class="good">接近</td><td>4.53</td><td>4.12</td><td class="good">-0.41</td><td class="good">-9.1%</td><td class="good">接近</td><td>7006</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>9.01</td><td>8.88</td><td class="good">-0.13</td><td class="good">-1.5%</td><td class="good">接近</td><td>4.62</td><td>4.38</td><td class="good">-0.24</td><td class="good">-5.2%</td><td class="good">接近</td><td>13732</td></tr><tr><td>128 x 128</td><td class="missing">未完成/缺失</td><td>10.40</td><td>9.83</td><td class="good">-0.57</td><td class="good">-5.4%</td><td class="good">接近</td><td>4.66</td><td>4.92</td><td class="good">0.26</td><td class="good">5.7%</td><td class="good">接近</td><td>15678</td></tr><tr><td>256 x 256</td><td class="missing">未完成/缺失</td><td>11.00</td><td>-</td><td class="missing">-</td><td class="missing">-%</td><td class="missing">缺失</td><td>4.62</td><td>-</td><td class="missing">-</td><td class="missing">-%</td><td class="missing">缺失</td><td>-</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.0870</td><td>1.0533</td><td class="good">-0.0337</td><td class="good">-3.1%</td><td class="good">接近</td><td>1.0050</td><td>1.0444</td><td class="good">0.0394</td><td class="good">3.9%</td><td class="good">接近</td><td>-</td></tr>
         </tbody>
       </table>
     </section>
     
 
     <section class="paper-block">
-      <h3>M3, eta = 0.10</h3>
+      <h3>Newton-Krylov / NK2：M3, eta = 0.10</h3>
       <table class="booktabs">
         <thead>
           <tr>
@@ -199,6 +194,7 @@
             <th rowspan="2">状态</th>
             <th colspan="5">线性迭代</th>
             <th colspan="5">非线性迭代</th>
+            <th rowspan="2">时间步数</th>
           </tr>
           <tr>
             <th>论文</th>
@@ -214,14 +210,14 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>32 x 32</td><td class="good">完整</td><td>2.88</td><td>2.98</td><td class="good">0.10</td><td class="good">3.5%</td><td class="good">接近</td><td>3.32</td><td>2.39</td><td class="bad">-0.93</td><td class="bad">-28.1%</td><td class="bad">偏低</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>3.97</td><td>3.92</td><td class="good">-0.05</td><td class="good">-1.4%</td><td class="good">接近</td><td>3.49</td><td>2.74</td><td class="warn">-0.75</td><td class="warn">-21.5%</td><td class="warn">偏低</td></tr><tr><td>128 x 128</td><td class="good">完整</td><td>5.70</td><td>8.43</td><td class="bad">2.73</td><td class="bad">47.9%</td><td class="bad">偏高</td><td>3.74</td><td>3.82</td><td class="good">0.08</td><td class="good">2.2%</td><td class="good">接近</td></tr><tr><td>256 x 256</td><td class="good">完整</td><td>7.74</td><td>15.26</td><td class="bad">7.52</td><td class="bad">97.2%</td><td class="bad">偏高</td><td>3.86</td><td>4.61</td><td class="warn">0.75</td><td class="warn">19.5%</td><td class="warn">偏高</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.2400</td><td>1.4087</td><td class="warn">0.1687</td><td class="warn">13.6%</td><td class="warn">偏高</td><td>1.0380</td><td>1.1664</td><td class="warn">0.1284</td><td class="warn">12.4%</td><td class="warn">偏高</td></tr>
+          <tr><td>32 x 32</td><td class="good">完整</td><td>2.88</td><td>2.98</td><td class="good">0.10</td><td class="good">3.5%</td><td class="good">接近</td><td>3.32</td><td>2.39</td><td class="bad">-0.93</td><td class="bad">-28.1%</td><td class="bad">偏低</td><td>103</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>3.97</td><td>3.88</td><td class="good">-0.09</td><td class="good">-2.2%</td><td class="good">接近</td><td>3.49</td><td>2.74</td><td class="warn">-0.75</td><td class="warn">-21.6%</td><td class="warn">偏低</td><td>129</td></tr><tr><td>128 x 128</td><td class="good">完整</td><td>5.70</td><td>6.39</td><td class="warn">0.69</td><td class="warn">12.1%</td><td class="warn">偏高</td><td>3.74</td><td>3.59</td><td class="good">-0.15</td><td class="good">-4.1%</td><td class="good">接近</td><td>258</td></tr><tr><td>256 x 256</td><td class="good">完整</td><td>7.74</td><td>9.24</td><td class="warn">1.50</td><td class="warn">19.4%</td><td class="warn">偏高</td><td>3.86</td><td>4.14</td><td class="good">0.28</td><td class="good">7.2%</td><td class="good">接近</td><td>605</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.2400</td><td>1.2808</td><td class="good">0.0408</td><td class="good">3.3%</td><td class="good">接近</td><td>1.0380</td><td>1.1385</td><td class="good">0.1005</td><td class="good">9.7%</td><td class="good">接近</td><td>-</td></tr>
         </tbody>
       </table>
     </section>
     
 
     <section class="paper-block">
-      <h3>M1, eta = 0.50</h3>
+      <h3>Newton-Krylov / NK2：M1, eta = 0.50</h3>
       <table class="booktabs">
         <thead>
           <tr>
@@ -229,6 +225,7 @@
             <th rowspan="2">状态</th>
             <th colspan="5">线性迭代</th>
             <th colspan="5">非线性迭代</th>
+            <th rowspan="2">时间步数</th>
           </tr>
           <tr>
             <th>论文</th>
@@ -244,14 +241,14 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>32 x 32</td><td class="good">完整</td><td>3.35</td><td>5.88</td><td class="bad">2.53</td><td class="bad">75.7%</td><td class="bad">偏高</td><td>3.42</td><td>3.86</td><td class="warn">0.44</td><td class="warn">13.0%</td><td class="warn">偏高</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>3.96</td><td>6.63</td><td class="bad">2.67</td><td class="bad">67.5%</td><td class="bad">偏高</td><td>3.63</td><td>4.04</td><td class="warn">0.41</td><td class="warn">11.3%</td><td class="warn">偏高</td></tr><tr><td>128 x 128</td><td class="good">完整</td><td>4.59</td><td>7.83</td><td class="bad">3.24</td><td class="bad">70.5%</td><td class="bad">偏高</td><td>3.79</td><td>4.38</td><td class="warn">0.59</td><td class="warn">15.5%</td><td class="warn">偏高</td></tr><tr><td>256 x 256</td><td class="good">完整</td><td>5.34</td><td>8.62</td><td class="bad">3.28</td><td class="bad">61.4%</td><td class="bad">偏高</td><td>3.99</td><td>4.60</td><td class="warn">0.61</td><td class="warn">15.3%</td><td class="warn">偏高</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.1110</td><td>1.0945</td><td class="good">-0.0165</td><td class="good">-1.5%</td><td class="good">接近</td><td>1.0360</td><td>1.0435</td><td class="good">0.0075</td><td class="good">0.7%</td><td class="good">接近</td></tr>
+          <tr><td>32 x 32</td><td class="good">完整</td><td>3.35</td><td>5.88</td><td class="bad">2.53</td><td class="bad">75.7%</td><td class="bad">偏高</td><td>3.42</td><td>3.86</td><td class="warn">0.44</td><td class="warn">13.0%</td><td class="warn">偏高</td><td>147</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>3.96</td><td>6.63</td><td class="bad">2.67</td><td class="bad">67.5%</td><td class="bad">偏高</td><td>3.63</td><td>4.04</td><td class="warn">0.41</td><td class="warn">11.3%</td><td class="warn">偏高</td><td>156</td></tr><tr><td>128 x 128</td><td class="good">完整</td><td>4.59</td><td>7.83</td><td class="bad">3.24</td><td class="bad">70.5%</td><td class="bad">偏高</td><td>3.79</td><td>4.38</td><td class="warn">0.59</td><td class="warn">15.5%</td><td class="warn">偏高</td><td>167</td></tr><tr><td>256 x 256</td><td class="good">完整</td><td>5.34</td><td>8.62</td><td class="bad">3.28</td><td class="bad">61.4%</td><td class="bad">偏高</td><td>3.99</td><td>4.60</td><td class="warn">0.61</td><td class="warn">15.3%</td><td class="warn">偏高</td><td>180</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.1110</td><td>1.0945</td><td class="good">-0.0165</td><td class="good">-1.5%</td><td class="good">接近</td><td>1.0360</td><td>1.0435</td><td class="good">0.0075</td><td class="good">0.7%</td><td class="good">接近</td><td>-</td></tr>
         </tbody>
       </table>
     </section>
     
 
     <section class="paper-block">
-      <h3>M2, eta = 0.50</h3>
+      <h3>Newton-Krylov / NK2：M2, eta = 0.50</h3>
       <table class="booktabs">
         <thead>
           <tr>
@@ -259,6 +256,7 @@
             <th rowspan="2">状态</th>
             <th colspan="5">线性迭代</th>
             <th colspan="5">非线性迭代</th>
+            <th rowspan="2">时间步数</th>
           </tr>
           <tr>
             <th>论文</th>
@@ -274,14 +272,14 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>32 x 32</td><td class="good">完整</td><td>14.30</td><td>14.86</td><td class="good">0.56</td><td class="good">3.9%</td><td class="good">接近</td><td>5.29</td><td>5.31</td><td class="good">0.02</td><td class="good">0.3%</td><td class="good">接近</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>15.20</td><td>16.05</td><td class="good">0.85</td><td class="good">5.6%</td><td class="good">接近</td><td>5.37</td><td>5.45</td><td class="good">0.08</td><td class="good">1.5%</td><td class="good">接近</td></tr><tr><td>128 x 128</td><td class="missing">未完成/缺失</td><td>16.20</td><td>17.29</td><td class="good">1.09</td><td class="good">6.7%</td><td class="good">接近</td><td>5.48</td><td>5.80</td><td class="good">0.32</td><td class="good">5.9%</td><td class="good">接近</td></tr><tr><td>256 x 256</td><td class="missing">未完成/缺失</td><td>17.50</td><td>-</td><td class="missing">-</td><td class="missing">-%</td><td class="missing">缺失</td><td>5.66</td><td>-</td><td class="missing">-</td><td class="missing">-%</td><td class="missing">缺失</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.0480</td><td>1.0553</td><td class="good">0.0073</td><td class="good">0.7%</td><td class="good">接近</td><td>1.0160</td><td>1.0195</td><td class="good">0.0035</td><td class="good">0.3%</td><td class="good">接近</td></tr>
+          <tr><td>32 x 32</td><td class="good">完整</td><td>14.30</td><td>14.86</td><td class="good">0.56</td><td class="good">3.9%</td><td class="good">接近</td><td>5.29</td><td>5.31</td><td class="good">0.02</td><td class="good">0.3%</td><td class="good">接近</td><td>1177</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>15.20</td><td>16.05</td><td class="good">0.85</td><td class="good">5.6%</td><td class="good">接近</td><td>5.37</td><td>5.45</td><td class="good">0.08</td><td class="good">1.5%</td><td class="good">接近</td><td>2151</td></tr><tr><td>128 x 128</td><td class="missing">未完成/缺失</td><td>16.20</td><td>17.29</td><td class="good">1.09</td><td class="good">6.7%</td><td class="good">接近</td><td>5.48</td><td>5.80</td><td class="good">0.32</td><td class="good">5.9%</td><td class="good">接近</td><td>2774</td></tr><tr><td>256 x 256</td><td class="missing">未完成/缺失</td><td>17.50</td><td>-</td><td class="missing">-</td><td class="missing">-%</td><td class="missing">缺失</td><td>5.66</td><td>-</td><td class="missing">-</td><td class="missing">-%</td><td class="missing">缺失</td><td>-</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.0480</td><td>1.0553</td><td class="good">0.0073</td><td class="good">0.7%</td><td class="good">接近</td><td>1.0160</td><td>1.0195</td><td class="good">0.0035</td><td class="good">0.3%</td><td class="good">接近</td><td>-</td></tr>
         </tbody>
       </table>
     </section>
     
 
     <section class="paper-block">
-      <h3>M3, eta = 0.50</h3>
+      <h3>Newton-Krylov / NK2：M3, eta = 0.50</h3>
       <table class="booktabs">
         <thead>
           <tr>
@@ -289,6 +287,7 @@
             <th rowspan="2">状态</th>
             <th colspan="5">线性迭代</th>
             <th colspan="5">非线性迭代</th>
+            <th rowspan="2">时间步数</th>
           </tr>
           <tr>
             <th>论文</th>
@@ -304,7 +303,71 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>32 x 32</td><td class="good">完整</td><td>4.71</td><td>6.49</td><td class="bad">1.78</td><td class="bad">37.7%</td><td class="bad">偏高</td><td>3.66</td><td>3.05</td><td class="warn">-0.61</td><td class="warn">-16.6%</td><td class="warn">偏低</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>6.61</td><td>11.80</td><td class="bad">5.19</td><td class="bad">78.5%</td><td class="bad">偏高</td><td>3.97</td><td>3.91</td><td class="good">-0.06</td><td class="good">-1.6%</td><td class="good">接近</td></tr><tr><td>128 x 128</td><td class="good">完整</td><td>9.37</td><td>19.57</td><td class="bad">10.20</td><td class="bad">108.9%</td><td class="bad">偏高</td><td>4.27</td><td>4.85</td><td class="warn">0.58</td><td class="warn">13.7%</td><td class="warn">偏高</td></tr><tr><td>256 x 256</td><td class="missing">未完成/缺失</td><td>12.80</td><td>26.30</td><td class="bad">13.50</td><td class="bad">105.5%</td><td class="bad">偏高</td><td>4.52</td><td>5.17</td><td class="warn">0.65</td><td class="warn">14.3%</td><td class="warn">偏高</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.2420</td><td>1.3984</td><td class="warn">0.1564</td><td class="warn">12.6%</td><td class="warn">偏高</td><td>1.0510</td><td>1.1676</td><td class="warn">0.1166</td><td class="warn">11.1%</td><td class="warn">偏高</td></tr>
+          <tr><td>32 x 32</td><td class="good">完整</td><td>4.71</td><td>5.88</td><td class="warn">1.17</td><td class="warn">24.8%</td><td class="warn">偏高</td><td>3.66</td><td>3.01</td><td class="warn">-0.65</td><td class="warn">-17.8%</td><td class="warn">偏低</td><td>137</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>6.61</td><td>9.33</td><td class="bad">2.72</td><td class="bad">41.1%</td><td class="bad">偏高</td><td>3.97</td><td>3.87</td><td class="good">-0.10</td><td class="good">-2.6%</td><td class="good">接近</td><td>194</td></tr><tr><td>128 x 128</td><td class="good">完整</td><td>9.37</td><td>12.98</td><td class="bad">3.61</td><td class="bad">38.5%</td><td class="bad">偏高</td><td>4.27</td><td>4.48</td><td class="good">0.21</td><td class="good">5.0%</td><td class="good">接近</td><td>301</td></tr><tr><td>256 x 256</td><td class="missing">未完成/缺失</td><td>12.80</td><td>15.05</td><td class="warn">2.25</td><td class="warn">17.6%</td><td class="warn">偏高</td><td>4.52</td><td>4.79</td><td class="good">0.27</td><td class="good">5.9%</td><td class="good">接近</td><td>311</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.2420</td><td>1.2859</td><td class="good">0.0439</td><td class="good">3.5%</td><td class="good">接近</td><td>1.0510</td><td>1.1439</td><td class="good">0.0929</td><td class="good">8.8%</td><td class="good">接近</td><td>-</td></tr>
+        </tbody>
+      </table>
+    </section>
+    
+
+    <h2>M3 Picard 对比</h2>
+    
+    <section class="paper-block">
+      <h3>Picard：M3, eta = 0.10</h3>
+      <table class="booktabs">
+        <thead>
+          <tr>
+            <th rowspan="2">网格</th>
+            <th rowspan="2">状态</th>
+            <th colspan="5">线性迭代</th>
+            <th colspan="5">非线性迭代</th>
+            <th rowspan="2">时间步数</th>
+          </tr>
+          <tr>
+            <th>论文</th>
+            <th>本代码</th>
+            <th>差值</th>
+            <th>相对误差</th>
+            <th>判断</th>
+            <th>论文</th>
+            <th>本代码</th>
+            <th>差值</th>
+            <th>相对误差</th>
+            <th>判断</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>32 x 32</td><td class="good">完整</td><td>3.26</td><td>4.30</td><td class="bad">1.04</td><td class="bad">31.9%</td><td class="bad">偏高</td><td>4.26</td><td>4.30</td><td class="good">0.04</td><td class="good">1.0%</td><td class="good">接近</td><td>103</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>4.09</td><td>5.65</td><td class="bad">1.56</td><td class="bad">38.2%</td><td class="bad">偏高</td><td>5.69</td><td>5.65</td><td class="good">-0.04</td><td class="good">-0.7%</td><td class="good">接近</td><td>129</td></tr><tr><td>128 x 128</td><td class="good">完整</td><td>7.06</td><td>8.43</td><td class="warn">1.37</td><td class="warn">19.4%</td><td class="warn">偏高</td><td>8.05</td><td>8.43</td><td class="good">0.38</td><td class="good">4.7%</td><td class="good">接近</td><td>258</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.2780</td><td>1.2427</td><td class="good">-0.0353</td><td class="good">-2.8%</td><td class="good">接近</td><td>1.2300</td><td>1.2427</td><td class="good">0.0127</td><td class="good">1.0%</td><td class="good">接近</td><td>-</td></tr>
+        </tbody>
+      </table>
+    </section>
+    
+
+    <section class="paper-block">
+      <h3>Picard：M3, eta = 0.50</h3>
+      <table class="booktabs">
+        <thead>
+          <tr>
+            <th rowspan="2">网格</th>
+            <th rowspan="2">状态</th>
+            <th colspan="5">线性迭代</th>
+            <th colspan="5">非线性迭代</th>
+            <th rowspan="2">时间步数</th>
+          </tr>
+          <tr>
+            <th>论文</th>
+            <th>本代码</th>
+            <th>差值</th>
+            <th>相对误差</th>
+            <th>判断</th>
+            <th>论文</th>
+            <th>本代码</th>
+            <th>差值</th>
+            <th>相对误差</th>
+            <th>判断</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>32 x 32</td><td class="good">完整</td><td>5.43</td><td>8.82</td><td class="bad">3.39</td><td class="bad">62.4%</td><td class="bad">偏高</td><td>6.43</td><td>8.34</td><td class="bad">1.91</td><td class="bad">29.6%</td><td class="bad">偏高</td><td>137</td></tr><tr><td>64 x 64</td><td class="good">完整</td><td>9.75</td><td>19.29</td><td class="bad">9.54</td><td class="bad">97.9%</td><td class="bad">偏高</td><td>9.49</td><td>12.93</td><td class="bad">3.44</td><td class="bad">36.2%</td><td class="bad">偏高</td><td>194</td></tr><tr><td>128 x 128</td><td class="good">完整</td><td>22.70</td><td>33.47</td><td class="bad">10.77</td><td class="bad">47.5%</td><td class="bad">偏高</td><td>14.70</td><td>19.17</td><td class="bad">4.47</td><td class="bad">30.4%</td><td class="bad">偏高</td><td>301</td></tr><tr class="scaling-row"><td colspan="2">Scaling exponent</td><td>1.5160</td><td>1.4811</td><td class="good">-0.0349</td><td class="good">-2.3%</td><td class="good">接近</td><td>1.2980</td><td>1.3003</td><td class="good">0.0023</td><td class="good">0.2%</td><td class="good">接近</td><td>-</td></tr>
         </tbody>
       </table>
     </section>

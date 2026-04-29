@@ -97,11 +97,12 @@ def apply_wilson_limiter_on_faces(E: np.ndarray,
                                   Dx_raw: np.ndarray,
                                   Dy_raw: np.ndarray,
                                   grid: dict | None = None,
-                                  boundary: dict | None = None
+                                  boundary: dict | None = None,
+                                  gradient_mode: str = "cell_norm",
                                   ) -> tuple[np.ndarray, np.ndarray]:
     """Apply Wilson's limiter directly on faces for model M3.
 
-    Interior faces use the paper-like face-gradient form:
+    Interior faces use the paper-like gradient-norm form:
         D_L = 1 / (1 / D + |grad E| / E).
 
     Left/right Robin boundary faces are also limited, using the Robin boundary
@@ -114,23 +115,39 @@ def apply_wilson_limiter_on_faces(E: np.ndarray,
     dx = 1.0 if grid is None else grid["dx"]
     dy = 1.0 if grid is None else grid["dy"]
 
-    # Interior x-faces.
-    if nx > 1:
-        Dx[1:nx, :] = wilson_limiter(
-            E[:-1, :],
-            E[1:, :],
-            Dx_raw[1:nx, :],
-            distance=dx,
-        )
+    if gradient_mode == "normal":
+        # Interior x-faces.
+        if nx > 1:
+            Dx[1:nx, :] = wilson_limiter(
+                E[:-1, :],
+                E[1:, :],
+                Dx_raw[1:nx, :],
+                distance=dx,
+            )
 
-    # Interior y-faces.
-    if ny > 1:
-        Dy[:, 1:ny] = wilson_limiter(
-            E[:, :-1],
-            E[:, 1:],
-            Dy_raw[:, 1:ny],
-            distance=dy,
-        )
+        # Interior y-faces.
+        if ny > 1:
+            Dy[:, 1:ny] = wilson_limiter(
+                E[:, :-1],
+                E[:, 1:],
+                Dy_raw[:, 1:ny],
+                distance=dy,
+            )
+    elif gradient_mode == "cell_norm":
+        gradx, grady = compute_gradients(E, grid)
+        ratio_cell = np.sqrt(gradx**2 + grady**2) / np.maximum(E, 1e-30)
+        if nx > 1:
+            ratio_x = 0.5 * (ratio_cell[:-1, :] + ratio_cell[1:, :])
+            Dx[1:nx, :] = 1.0 / (
+                1.0 / np.maximum(Dx_raw[1:nx, :], 1e-30) + ratio_x
+            )
+        if ny > 1:
+            ratio_y = 0.5 * (ratio_cell[:, :-1] + ratio_cell[:, 1:])
+            Dy[:, 1:ny] = 1.0 / (
+                1.0 / np.maximum(Dy_raw[:, 1:ny], 1e-30) + ratio_y
+            )
+    else:
+        raise ValueError("gradient_mode must be 'normal' or 'cell_norm'.")
 
     # Left/right Robin boundary x-faces.
     # Top/bottom are symmetric boundaries, so they are still zero-flux boundaries
@@ -361,12 +378,13 @@ def build_frozen_diffusion(E: np.ndarray,
 
     E_limiter = E if E_for_limiter is None else E_for_limiter
     Dx, Dy = apply_wilson_limiter_on_faces(
-    E_limiter,
-    Dx_raw,
-    Dy_raw,
-    grid=problem["grid"],
-    boundary=problem["boundary"],
-)
+        E_limiter,
+        Dx_raw,
+        Dy_raw,
+        grid=problem["grid"],
+        boundary=problem["boundary"],
+        gradient_mode=problem.get("m3_limiter_gradient_mode", "cell_norm"),
+    )
 
     return D_raw_cell, Dx, Dy
 

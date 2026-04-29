@@ -52,9 +52,9 @@ E_FLOOR = 1.0
 
 # ---------- 批量测试参数 ----------
 BATCH_METHODS = ["nk2","picard"]
-BATCH_MODELS = ["M1","M3"]
+BATCH_MODELS = ["M3"]
 BATCH_ETAS = [0.10,0.50]
-BATCH_GRIDS = [256]
+BATCH_GRIDS = [32,64,128,256]
 
 # =========================================================
 # 下面一般不用改
