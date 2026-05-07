@@ -1,0 +1,5 @@
+﻿model,eta,grid,method,field,requested_t_end,mp4_path,size_bytes
+M1,0.10,128,nk2,T,7,output_full_mp4\M1_eta0p1_grid128_methodnk2_T_tend7p0.mp4,5418835
+M1,0.50,128,nk2,T,7,output_full_mp4\M1_eta0p5_grid128_methodnk2_T_tend7p0.mp4,5190466
+M3,0.10,128,nk2,T,7,output_full_mp4\M3_eta0p1_grid128_methodnk2_T_tend7p0.mp4,7795937
+M3,0.50,128,nk2,T,7,output_full_mp4\M3_eta0p5_grid128_methodnk2_T_tend7p0.mp4,7460176

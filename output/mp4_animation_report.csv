@@ -1,0 +1,13 @@
+﻿model,eta,grid,method,field,paper_default_t_end,mp4_path,contact_sheet_path,size_bytes
+M1,0.10,64,nk2,T,5,output_mp4\M1_eta0p1_grid64_methodnk2_T.mp4,output_mp4_contact_sheets\M1_eta0p1_grid64_methodnk2_T_contact_sheet.png,659413
+M1,0.10,128,nk2,T,5,output_mp4\M1_eta0p1_grid128_methodnk2_T.mp4,output_mp4_contact_sheets\M1_eta0p1_grid128_methodnk2_T_contact_sheet.png,873232
+M1,0.50,64,nk2,T,5,output_mp4\M1_eta0p5_grid64_methodnk2_T.mp4,output_mp4_contact_sheets\M1_eta0p5_grid64_methodnk2_T_contact_sheet.png,270240
+M1,0.50,128,nk2,T,5,output_mp4\M1_eta0p5_grid128_methodnk2_T.mp4,output_mp4_contact_sheets\M1_eta0p5_grid128_methodnk2_T_contact_sheet.png,331477
+M2,0.10,64,nk2,T,0.005,output_mp4\M2_eta0p1_grid64_methodnk2_T.mp4,output_mp4_contact_sheets\M2_eta0p1_grid64_methodnk2_T_contact_sheet.png,1869305
+M2,0.10,128,nk2,T,0.005,output_mp4\M2_eta0p1_grid128_methodnk2_T.mp4,output_mp4_contact_sheets\M2_eta0p1_grid128_methodnk2_T_contact_sheet.png,2366076
+M2,0.50,64,nk2,T,0.005,output_mp4\M2_eta0p5_grid64_methodnk2_T.mp4,output_mp4_contact_sheets\M2_eta0p5_grid64_methodnk2_T_contact_sheet.png,1656885
+M2,0.50,128,nk2,T,0.005,output_mp4\M2_eta0p5_grid128_methodnk2_T.mp4,output_mp4_contact_sheets\M2_eta0p5_grid128_methodnk2_T_contact_sheet.png,2351838
+M3,0.10,64,nk2,T,0.1,output_mp4\M3_eta0p1_grid64_methodnk2_T.mp4,output_mp4_contact_sheets\M3_eta0p1_grid64_methodnk2_T_contact_sheet.png,120930
+M3,0.10,128,nk2,T,0.1,output_mp4\M3_eta0p1_grid128_methodnk2_T.mp4,output_mp4_contact_sheets\M3_eta0p1_grid128_methodnk2_T_contact_sheet.png,247094
+M3,0.50,64,nk2,T,0.5,output_mp4\M3_eta0p5_grid64_methodnk2_T.mp4,output_mp4_contact_sheets\M3_eta0p5_grid64_methodnk2_T_contact_sheet.png,276089
+M3,0.50,128,nk2,T,0.5,output_mp4\M3_eta0p5_grid128_methodnk2_T.mp4,output_mp4_contact_sheets\M3_eta0p5_grid128_methodnk2_T_contact_sheet.png,497246

@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>长时间完整扩散过程动画报告</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --line: #d9dee8;
+      --accent: #1f6feb;
+      --accent-soft: #e8f1ff;
+      --warn: #865300;
+      --warn-bg: #fff6df;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.55;
+    }
+    main {
+      width: min(1120px, calc(100vw - 36px));
+      margin: 0 auto;
+      padding: 30px 0 48px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 24px 0 6px;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+    h3 {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: 0;
+      word-break: break-word;
+    }
+    p { margin: 7px 0; }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    .lead {
+      max-width: 900px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+    .notice {
+      margin: 18px 0;
+      padding: 14px 16px;
+      border: 1px solid #f0d38a;
+      background: var(--warn-bg);
+      color: var(--warn);
+      border-radius: 8px;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 18px 0;
+    }
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .metric-value {
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .metric-label {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      margin: 18px 0;
+    }
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      white-space: nowrap;
+    }
+    th {
+      background: #f0f3f8;
+      color: #39455f;
+      font-size: 13px;
+    }
+    tr:last-child td { border-bottom: 0; }
+    .case-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      margin: 14px 0;
+    }
+    .case-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 6px;
+      min-width: 280px;
+    }
+    .tags span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 3px 8px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: #184e9f;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    figure {
+      margin: 0;
+    }
+    figcaption {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    video {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #111827;
+    }
+    footer {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    @media (max-width: 860px) {
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .case-head { display: block; }
+      .tags {
+        justify-content: flex-start;
+        min-width: 0;
+        margin-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>长时间完整扩散过程动画报告</h1>
+      <p class="lead">
+        本报告整理的是 <code>output_full_mp4</code> 中已经生成的长时间扩散 MP4。
+        当前主要用于观察更完整的扩散过程，与 <code>output_mp4</code> 中的论文默认终止时间复现动画分开保存。
+      </p>
+      <p class="lead">生成时间：2026-05-07 23:19:48；索引 CSV：<a href="full_mp4_animation_report.csv">full_mp4_animation_report.csv</a></p>
+    </header>
+
+    <div class="notice">
+      说明：由于 M2 的长时间计算运行时间过长，本报告暂时只展示当前已经完成的这四个视频。
+      MP4 播放秒数由输出帧数和帧率决定，不等于物理时间；物理终止时间请以文件名和表格中的 T_END 为准。
+    </div>
+
+    <section class="metrics">
+      <div class="metric"><div class="metric-value">4</div><div class="metric-label">MP4 动画</div></div>
+<div class="metric"><div class="metric-value">M1: 2, M3: 2</div><div class="metric-label">展示模型</div></div>
+<div class="metric"><div class="metric-value">0.10: 2, 0.50: 2</div><div class="metric-label">eta</div></div>
+<div class="metric"><div class="metric-value">7</div><div class="metric-label">T_END</div></div>
+    </section>
+
+    <section>
+      <h2>文件总览</h2>
+      <div class="table-wrap">
+        
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>eta</th>
+          <th>Grid</th>
+          <th>Method</th>
+          <th>Field</th>
+          <th>Requested T_END</th>
+          <th>MP4 大小</th>
+          <th>文件</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>M1</td><td>0.10</td><td>128 x 128</td><td>nk2</td><td>T</td><td>7</td><td>5.2 MB</td><td><a href="../output_full_mp4/M1_eta0p1_grid128_methodnk2_T_tend7p0.mp4">MP4</a></td></tr><tr><td>M1</td><td>0.50</td><td>128 x 128</td><td>nk2</td><td>T</td><td>7</td><td>5.0 MB</td><td><a href="../output_full_mp4/M1_eta0p5_grid128_methodnk2_T_tend7p0.mp4">MP4</a></td></tr><tr><td>M3</td><td>0.10</td><td>128 x 128</td><td>nk2</td><td>T</td><td>7</td><td>7.4 MB</td><td><a href="../output_full_mp4/M3_eta0p1_grid128_methodnk2_T_tend7p0.mp4">MP4</a></td></tr><tr><td>M3</td><td>0.50</td><td>128 x 128</td><td>nk2</td><td>T</td><td>7</td><td>7.1 MB</td><td><a href="../output_full_mp4/M3_eta0p5_grid128_methodnk2_T_tend7p0.mp4">MP4</a></td></tr>
+      </tbody>
+    </table>
+    
+      </div>
+    </section>
+
+    <section>
+      <h2>动画预览</h2>
+      
+                <section class="group">
+                  <h2>M1，eta = 0.10</h2>
+                  <p>M1：相对温和的非线性扩散长时间展示。 本组视频请求的长时间终止时间为 T_END = 7。</p>
+                </section>
+                
+
+            <article class="case-card">
+              <div class="case-head">
+                <h3>M1_eta0p1_grid128_methodnk2_T_tend7p0.mp4</h3>
+                <div class="tags">
+                  <span>M1</span>
+                  <span>eta 0.10</span>
+                  <span>128 x 128</span>
+                  <span>nk2</span>
+                  <span>T_END 7</span>
+                </div>
+              </div>
+              <figure class="video-box">
+                <video controls muted preload="metadata" src="../output_full_mp4/M1_eta0p1_grid128_methodnk2_T_tend7p0.mp4"></video>
+                <figcaption><a href="../output_full_mp4/M1_eta0p1_grid128_methodnk2_T_tend7p0.mp4">打开 MP4</a></figcaption>
+              </figure>
+            </article>
+            
+
+                <section class="group">
+                  <h2>M1，eta = 0.50</h2>
+                  <p>M1：相对温和的非线性扩散长时间展示。 本组视频请求的长时间终止时间为 T_END = 7。</p>
+                </section>
+                
+
+            <article class="case-card">
+              <div class="case-head">
+                <h3>M1_eta0p5_grid128_methodnk2_T_tend7p0.mp4</h3>
+                <div class="tags">
+                  <span>M1</span>
+                  <span>eta 0.50</span>
+                  <span>128 x 128</span>
+                  <span>nk2</span>
+                  <span>T_END 7</span>
+                </div>
+              </div>
+              <figure class="video-box">
+                <video controls muted preload="metadata" src="../output_full_mp4/M1_eta0p5_grid128_methodnk2_T_tend7p0.mp4"></video>
+                <figcaption><a href="../output_full_mp4/M1_eta0p5_grid128_methodnk2_T_tend7p0.mp4">打开 MP4</a></figcaption>
+              </figure>
+            </article>
+            
+
+                <section class="group">
+                  <h2>M3，eta = 0.10</h2>
+                  <p>M3：带通量限制的非线性扩散长时间展示。 本组视频请求的长时间终止时间为 T_END = 7。</p>
+                </section>
+                
+
+            <article class="case-card">
+              <div class="case-head">
+                <h3>M3_eta0p1_grid128_methodnk2_T_tend7p0.mp4</h3>
+                <div class="tags">
+                  <span>M3</span>
+                  <span>eta 0.10</span>
+                  <span>128 x 128</span>
+                  <span>nk2</span>
+                  <span>T_END 7</span>
+                </div>
+              </div>
+              <figure class="video-box">
+                <video controls muted preload="metadata" src="../output_full_mp4/M3_eta0p1_grid128_methodnk2_T_tend7p0.mp4"></video>
+                <figcaption><a href="../output_full_mp4/M3_eta0p1_grid128_methodnk2_T_tend7p0.mp4">打开 MP4</a></figcaption>
+              </figure>
+            </article>
+            
+
+                <section class="group">
+                  <h2>M3，eta = 0.50</h2>
+                  <p>M3：带通量限制的非线性扩散长时间展示。 本组视频请求的长时间终止时间为 T_END = 7。</p>
+                </section>
+                
+
+            <article class="case-card">
+              <div class="case-head">
+                <h3>M3_eta0p5_grid128_methodnk2_T_tend7p0.mp4</h3>
+                <div class="tags">
+                  <span>M3</span>
+                  <span>eta 0.50</span>
+                  <span>128 x 128</span>
+                  <span>nk2</span>
+                  <span>T_END 7</span>
+                </div>
+              </div>
+              <figure class="video-box">
+                <video controls muted preload="metadata" src="../output_full_mp4/M3_eta0p5_grid128_methodnk2_T_tend7p0.mp4"></video>
+                <figcaption><a href="../output_full_mp4/M3_eta0p5_grid128_methodnk2_T_tend7p0.mp4">打开 MP4</a></figcaption>
+              </figure>
+            </article>
+            
+    </section>
+
+    <footer>
+      来源目录：<code>output_full_mp4</code>。
+    </footer>
+  </main>
+</body>
+</html>
