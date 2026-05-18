@@ -60,10 +60,10 @@ DT_INIT = 1e-6
 # Batch mode.  This is a Cartesian product; be careful mixing models with very
 # different useful T_END values.
 BATCH_METHODS = ["nk2"]
-BATCH_MODELS = ["M1","M3"]
+BATCH_MODELS = ["M2"]
 BATCH_ETAS = [0.10,0.50]
 BATCH_GRID_SIZES = [128]
-BATCH_T_ENDS = [7.0]
+BATCH_T_ENDS = [1.0]
 BATCH_FIELDS = ["T"]
 
 MP4_OUTPUT_DIR = "output_full_mp4"

@@ -351,6 +351,18 @@ def nk2_step(
         )
         linear_iters_total += info["iters"]
         linear_iters_by_nonlinear.append(info["iters"])
+
+        # 关键修改：如果线性 GMRES 没收敛，不要继续拿这个 dE 更新 Newton。
+        # 直接返回失败，让 driver.py 减小 dt 后重试当前时间步。
+        if not info["converged"]:
+            return E, _build_step_stats(
+                nonlinear_iters=k + 1,
+                linear_iters_total=linear_iters_total,
+                converged=False,
+                final_residual_norm=final_residual_norm,
+                linear_iters_by_nonlinear=linear_iters_by_nonlinear,
+            )
+
         dE = dE_flat.reshape(E.shape)
         E, _ = _damped_update(
             E,

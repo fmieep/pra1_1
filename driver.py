@@ -26,6 +26,7 @@ def run_simulation(problem: dict, run_cfg, solver_cfg) -> dict:
     t = 0.0
     dt = run_cfg.dt_init
     E = problem["E0"].copy()
+    snapshot_callback = getattr(run_cfg, "snapshot_callback", None)
 
     time_history = []
     dt_history = []
@@ -40,23 +41,53 @@ def run_simulation(problem: dict, run_cfg, solver_cfg) -> dict:
     resume_from_checkpoint = getattr(run_cfg, "resume_from_checkpoint", False)
 
     if resume_from_checkpoint and checkpoint_path and os.path.exists(checkpoint_path):
-        ckpt = np.load(checkpoint_path, allow_pickle=True)
+        with np.load(checkpoint_path, allow_pickle=True) as ckpt:
+            t = float(ckpt["t"])
+            dt = float(ckpt["dt"])
+            E = ckpt["E"].copy()
 
-        t = float(ckpt["t"])
-        dt = float(ckpt["dt"])
-        E = ckpt["E"].copy()
+            time_history = ckpt["time_history"].tolist()
+            dt_history = ckpt["dt_history"].tolist()
+            linear_iters_history = ckpt["linear_iters_history"].tolist()
+            nonlinear_iters_history = ckpt["nonlinear_iters_history"].tolist()
+            eta_history = ckpt["eta_history"].tolist()
+            residual_history = ckpt["residual_history"].tolist()
 
-        time_history = ckpt["time_history"].tolist()
-        dt_history = ckpt["dt_history"].tolist()
-        linear_iters_history = ckpt["linear_iters_history"].tolist()
-        nonlinear_iters_history = ckpt["nonlinear_iters_history"].tolist()
-        eta_history = ckpt["eta_history"].tolist()
-        residual_history = ckpt["residual_history"].tolist()
+        # Older failed checkpoints may contain one rejected trial in the
+        # histories even though t/E were saved at the last accepted state.
+        # Trim those rejected entries so resumed paper averages only count
+        # accepted time steps.
+        t_tol = max(1e-14, 1e-10 * max(abs(t), 1.0))
+        accepted_count = sum(float(ti) <= t + t_tol for ti in time_history)
+        if accepted_count < len(time_history):
+            rejected_count = len(time_history) - accepted_count
+            time_history = time_history[:accepted_count]
+            dt_history = dt_history[:accepted_count]
+            linear_iters_history = linear_iters_history[:accepted_count]
+            nonlinear_iters_history = nonlinear_iters_history[:accepted_count]
+            eta_history = eta_history[:accepted_count]
+            residual_history = residual_history[:accepted_count]
+            print(
+                f"[resume] trimmed {rejected_count} rejected checkpoint step(s)",
+                flush=True,
+            )
 
         print(
             f"[resume] loaded checkpoint from {checkpoint_path}, "
             f"step={len(time_history)}, t={t:.6e}, dt={dt:.3e}",
             flush=True,
+        )
+
+    if callable(snapshot_callback):
+        snapshot_callback(
+            step=len(time_history),
+            t=t,
+            dt=dt,
+            eta=0.0,
+            E=E,
+            stats=None,
+            accepted=True,
+            initial=True,
         )
 
     failed_step = None
@@ -73,22 +104,36 @@ def run_simulation(problem: dict, run_cfg, solver_cfg) -> dict:
         if checkpoint_dir:
             os.makedirs(checkpoint_dir, exist_ok=True)
 
-        np.savez_compressed(
-            checkpoint_path,
-            t=t,
-            dt=dt,
-            E=E,
-            time_history=np.asarray(time_history, dtype=float),
-            dt_history=np.asarray(dt_history, dtype=float),
-            linear_iters_history=np.asarray(linear_iters_history, dtype=int),
-            nonlinear_iters_history=np.asarray(nonlinear_iters_history, dtype=int),
-            eta_history=np.asarray(eta_history, dtype=float),
-            residual_history=np.asarray(residual_history, dtype=float),
-        )
+        payload = {
+            "t": t,
+            "dt": dt,
+            "E": E,
+            "time_history": np.asarray(time_history, dtype=float),
+            "dt_history": np.asarray(dt_history, dtype=float),
+            "linear_iters_history": np.asarray(linear_iters_history, dtype=int),
+            "nonlinear_iters_history": np.asarray(nonlinear_iters_history, dtype=int),
+            "eta_history": np.asarray(eta_history, dtype=float),
+            "residual_history": np.asarray(residual_history, dtype=float),
+        }
+
+        tmp_path = f"{checkpoint_path}.tmp-{os.getpid()}"
+        with open(tmp_path, "wb") as f:
+            np.savez_compressed(f, **payload)
+
+        saved_path = checkpoint_path
+        try:
+            os.replace(tmp_path, checkpoint_path)
+        except PermissionError:
+            saved_path = f"{checkpoint_path}.blocked-{os.getpid()}.npz"
+            os.replace(tmp_path, saved_path)
+            print(
+                f"[{label}] target locked; saved fallback={saved_path}",
+                flush=True,
+            )
 
         print(
             f"[{label}] saved step={len(time_history)}, "
-            f"t={t:.6e}, file={checkpoint_path}",
+            f"t={t:.6e}, file={saved_path}",
             flush=True,
         )
 
@@ -110,13 +155,38 @@ def run_simulation(problem: dict, run_cfg, solver_cfg) -> dict:
                 step_success = True
                 break
 
-            if retry < max_step_retries:
-                dt_try *= 0.5
-            else:
-                break
+            if not stats["converged"]:
+                print(
+                    f"[retry-failed] retry={retry}, "
+                    f"dt_try={dt_try:.3e}, "
+                    f"nonlin={stats['nonlinear_iters']}, "
+                    f"lin_total={stats['linear_iters_total']}, "
+                    f"lin_by_nonlin={stats.get('linear_iters_by_nonlinear', [])}, "
+                    f"res={stats['final_residual_norm']:.3e}",
+                    flush=True,
+                )
+
+                if retry < max_step_retries:
+                    dt_try *= 0.5
+                else:
+                    break
 
             if dt_try < 1e-16:
                 break
+
+        if not step_success:
+            converged_all = False
+            failed_step = len(time_history) + 1
+            failure_reason = (
+                f"{solver_cfg.method} failed after retries at "
+                f"t={t + dt_try:.6e}, dt={dt_try:.6e}, "
+                f"residual={last_stats['final_residual_norm']:.6e}"
+            )
+
+            # Save the last accepted state. Rejected trial statistics are not
+            # appended to the paper-style histories.
+            save_checkpoint(label="checkpoint-failed")
+            break
 
         eta = compute_eta(last_E_new, E, e_floor=run_cfg.e_floor)
 
@@ -144,21 +214,21 @@ def run_simulation(problem: dict, run_cfg, solver_cfg) -> dict:
                 flush=True,
             )
 
-        if not step_success:
-            converged_all = False
-            failed_step = len(time_history)
-            failure_reason = (
-                f"{solver_cfg.method} failed after retries at "
-                f"t={t + dt_try:.6e}, dt={dt_try:.6e}, "
-                f"residual={last_stats['final_residual_norm']:.6e}"
-            )
-
-            # 失败时也保存，方便之后检查最后状态
-            save_checkpoint(label="checkpoint-failed")
-            break
-
         E = last_E_new
         t += dt_try
+
+        if callable(snapshot_callback):
+            snapshot_callback(
+                step=step_no,
+                t=t,
+                dt=dt_try,
+                eta=eta,
+                E=E,
+                stats=last_stats,
+                accepted=True,
+                initial=False,
+            )
+
         dt = update_dt(dt_try, eta, run_cfg.eta_target, run_cfg.dt_growth_limit)
 
         checkpoint_interval = getattr(run_cfg, "checkpoint_interval", 0)

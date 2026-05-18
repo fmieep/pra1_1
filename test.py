@@ -10,18 +10,17 @@ from datetime import datetime
 # 这里是“总开关”：改这里就行
 # =========================================================
 
-MODE = "batch"  # 可选: "single" 或 "batch"
+MODE = "single"  # 可选: "single" 或 "batch"
 
 # ---------- 单个测试参数 ----------
 METHOD = "nk2"  # 可选: "nk2" 或 "picard"
 MODEL = "M2"  # 可选: "M1", "M2", "M3"
 ETA = 0.50  # 常用: 0.10 或 0.50
-NX = 128
-NY = 128
-
+NX = 256
+NY = 256
 
 # ---------- 求解器细参数 ----------
-NONLINEAR_TOL = 1.2e-6
+NONLINEAR_TOL = 2e-6
 LINEAR_TOL_FACTOR = 3e-3
 MAX_NONLINEAR_ITERS = 60
 MAX_LINEAR_ITERS = 100
@@ -49,12 +48,12 @@ DT_INIT = 1e-6
 
 DT_GROWTH_LIMIT = 1.1
 E_FLOOR = 1.0
-
+MAX_STEP_RETRIES = 8
 # ---------- 批量测试参数 ----------
 BATCH_METHODS = ["nk2","picard"]
-BATCH_MODELS = ["M3"]
+BATCH_MODELS = ["M1","M2","M3"]
 BATCH_ETAS = [0.10,0.50]
-BATCH_GRIDS = [32,64,128,256]
+BATCH_GRIDS = [32,64,128]
 
 # =========================================================
 # 下面一般不用改
@@ -75,6 +74,7 @@ def make_run_config(model, nx, ny, eta, method):
     
     run_cfg.dt_growth_limit = DT_GROWTH_LIMIT
     run_cfg.e_floor = E_FLOOR
+    run_cfg.max_step_retries = MAX_STEP_RETRIES
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
     run_cfg.checkpoint_interval = CHECKPOINT_INTERVAL

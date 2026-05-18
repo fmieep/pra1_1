@@ -20,10 +20,10 @@ from pathlib import Path
 import numpy as np
 
 
-CHECKPOINT_DIR = Path("checkpoints")
+CHECKPOINT_DIR = Path("checkpoints_rerun_tol2e-6")
 OUTPUT_DIR = Path("output")
-HTML_PATH = OUTPUT_DIR / "paper_comparison.html"
-CSV_PATH = OUTPUT_DIR / "paper_comparison.csv"
+HTML_PATH = OUTPUT_DIR / "paper_comparison_rerun_tol2e-6.html"
+CSV_PATH = OUTPUT_DIR / "paper_comparison_rerun_tol2e-6.csv"
 
 MODELS = ["M1", "M2", "M3"]
 ETAS = [0.10, 0.50]
@@ -147,13 +147,19 @@ def _load_checkpoint_results() -> dict[tuple[str, str, float, int], dict]:
         method = match.group(4).lower()
 
         data = np.load(path, allow_pickle=True)
-        linear = _safe_mean(np.asarray(data["linear_iters_history"], dtype=float))
-        nonlinear = _safe_mean(np.asarray(data["nonlinear_iters_history"], dtype=float))
+        t_final = float(data["t"])
+        time_history = np.asarray(data["time_history"], dtype=float)
+        t_tol = max(1e-14, 1e-10 * max(abs(t_final), 1.0))
+        accepted_count = int(np.count_nonzero(time_history <= t_final + t_tol))
+        linear_history = np.asarray(data["linear_iters_history"], dtype=float)[:accepted_count]
+        nonlinear_history = np.asarray(data["nonlinear_iters_history"], dtype=float)[:accepted_count]
+        linear = _safe_mean(linear_history)
+        nonlinear = _safe_mean(nonlinear_history)
         results[(method, model, eta, grid)] = {
             "local_linear": linear,
             "local_nonlinear": nonlinear,
-            "num_steps": int(len(data["time_history"])),
-            "t_final": float(data["t"]),
+            "num_steps": accepted_count,
+            "t_final": t_final,
             "checkpoint": str(path),
         }
 
