@@ -1,0 +1,3 @@
+model,eta,grid,expected_t_end,checkpoint,t_final,steps,T_min,T_mean,T_max
+M1,0.5,256x256,5,checkpoints\M1_eta0.5_grid256_methodnk2.npz,5,180,1,3.6871815,9.9453225
+M2,0.5,128x128,0.005,checkpoints\M2_eta0.5_grid128_methodnk2.npz,0.005,4262,1,7.8007871,9.5842304

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Temperature Contour Comparison</title>
+  <style>
+    :root {
+      --ink: #1f2328;
+      --muted: #636c76;
+      --line: #d8dee4;
+      --soft: #f6f8fa;
+    }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: white;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 30px 28px 48px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+    p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .paired {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+      margin-top: 22px;
+      align-items: start;
+    }
+    article {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: var(--soft);
+    }
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: white;
+      border: 1px solid var(--line);
+    }
+    code {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+    @media (max-width: 920px) {
+      main {
+        padding: 22px 14px 36px;
+      }
+      .paired {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Figure 4 温度等值线：论文图与代码图对照</h1>
+    <p>
+      左侧为从论文 PDF 裁出的 Figure 4；右侧为读取本地 NK2 checkpoint 后生成的等温线图。
+      本报告不重跑 PDE。代码图使用 M1 256x256、M2 128x128，并采用论文 Figure 4 的标注等温线刻度。
+      温度统计见 <code>temperature_summary.csv</code>。
+    </p>
+    <section class="paired">
+      <article>
+        <h2>论文 Figure 4</h2>
+        <img src="paper_fig4_temperature.png" alt="Paper Figure 4 temperature contours">
+      </article>
+      <article>
+        <h2>代码生成图</h2>
+        <img src="code_fig4_nk2_temperature_paper_exact.png" alt="Local NK2 temperature contours">
+      </article>
+    </section>
+  </main>
+</body>
+</html>

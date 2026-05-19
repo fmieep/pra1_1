@@ -10,8 +10,20 @@ checkpoints_full_diffusion/
 # Generated outputs are ignored by default. Keep only lightweight,
 # curated reproducibility reports that are useful on GitHub.
 output/*
+!output/*.html
+!output/*.csv
+!output/*.png
+!output/*.pdf
 !output/m3_picard_final_html/
 !output/m3_picard_final_html/**
+!output/m3_iteration_side_by_side/
+!output/m3_iteration_side_by_side/**
+!output/temperature_comparison/
+!output/temperature_comparison/**
+!output/m3_picard_paper_aligned/
+!output/m3_picard_paper_aligned/**
+!output/m1m2_picard_aligned_probe/
+!output/m1m2_picard_aligned_probe/**
 !output/m3_picard_mg_linear/
 !output/m3_picard_mg_linear/**
 output_full_mp4/
@@ -25,7 +37,15 @@ output_truth_npz/
 *.gif
 *.pdf
 
-# Keep generated report PDFs, but do not publish figures cropped from the paper.
+# Keep generated report PDFs in reproducibility output directories.
+!output/*.pdf
+!output/**/*.pdf
+
+# Keep bulky numerical states and scratch PDF extraction files out of GitHub.
+output/**/checkpoints/
+output/**/*.npz
+output/_tmp_pdf_pages/
+
 !output/m3_picard_final_html/**/*.pdf
 !output/m3_picard_mg_linear/**/*.pdf
 output/m3_picard_final_html/**/paper_fig*.png

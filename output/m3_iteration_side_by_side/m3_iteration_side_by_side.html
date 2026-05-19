@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>M3 Paper vs Code Iteration Comparison</title>
+  <style>
+    :root {
+      --ink: #1f2328;
+      --muted: #636c76;
+      --line: #d8dee4;
+      --soft: #f6f8fa;
+    }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: white;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    main {
+      max-width: 1420px;
+      margin: 0 auto;
+      padding: 30px 28px 48px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+    h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+    p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .comparison {
+      margin-top: 28px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .paired {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+      margin-top: 16px;
+      align-items: start;
+    }
+    article {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: var(--soft);
+    }
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: white;
+      border: 1px solid var(--line);
+    }
+    code {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+    @media (max-width: 920px) {
+      main {
+        padding: 22px 14px 36px;
+      }
+      .paired {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>M3 迭代次数：论文图与代码图对照</h1>
+    <p>
+      左侧为从论文 PDF 裁出的原图，右侧为读取本地 checkpoint 后生成的代码图。
+      本报告不重跑 PDE；数据来自 <code>checkpoints</code>。
+      简要统计见 <code>m3_iteration_summary.csv</code>。
+    </p>
+    
+            <section class="comparison">
+              <header>
+                <h2>Picard linear iterations on M3</h2>
+                <p>论文图 8 与本地 Picard linear_iters_history 对照。</p>
+              </header>
+              <div class="paired">
+                <article>
+                  <h3>论文图：Paper Figure 8</h3>
+                  <img src="paper_fig8_picard_linear.png" alt="Paper Figure 8">
+                </article>
+                <article>
+                  <h3>代码生成图</h3>
+                  <img src="m3_picard_linear_iterations_paper_style.png" alt="Picard linear iterations on M3 local plot">
+                </article>
+              </div>
+            </section>
+            
+            <section class="comparison">
+              <header>
+                <h2>Picard nonlinear iterations on M3</h2>
+                <p>论文图 9 与本地 Picard nonlinear_iters_history 对照。</p>
+              </header>
+              <div class="paired">
+                <article>
+                  <h3>论文图：Paper Figure 9</h3>
+                  <img src="paper_fig9_picard_nonlinear.png" alt="Paper Figure 9">
+                </article>
+                <article>
+                  <h3>代码生成图</h3>
+                  <img src="m3_picard_nonlinear_iterations_paper_style.png" alt="Picard nonlinear iterations on M3 local plot">
+                </article>
+              </div>
+            </section>
+            
+            <section class="comparison">
+              <header>
+                <h2>Newton-Krylov linear iterations on M3</h2>
+                <p>论文图 10 与本地 NK2 linear_iters_history 对照；本地图包含 256x256。</p>
+              </header>
+              <div class="paired">
+                <article>
+                  <h3>论文图：Paper Figure 10</h3>
+                  <img src="paper_fig10_nk2_linear.png" alt="Paper Figure 10">
+                </article>
+                <article>
+                  <h3>代码生成图</h3>
+                  <img src="m3_nk2_linear_iterations_paper_style.png" alt="Newton-Krylov linear iterations on M3 local plot">
+                </article>
+              </div>
+            </section>
+            
+            <section class="comparison">
+              <header>
+                <h2>Newton-Krylov nonlinear iterations on M3</h2>
+                <p>论文图 11 与本地 NK2 nonlinear_iters_history 对照；本地图包含 256x256。</p>
+              </header>
+              <div class="paired">
+                <article>
+                  <h3>论文图：Paper Figure 11</h3>
+                  <img src="paper_fig11_nk2_nonlinear.png" alt="Paper Figure 11">
+                </article>
+                <article>
+                  <h3>代码生成图</h3>
+                  <img src="m3_nk2_nonlinear_iterations_paper_style.png" alt="Newton-Krylov nonlinear iterations on M3 local plot">
+                </article>
+              </div>
+            </section>
+            
+  </main>
+</body>
+</html>
