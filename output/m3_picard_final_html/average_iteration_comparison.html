@@ -1,0 +1,133 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>M3 Picard Average Iterations</title>
+  <style>
+    :root {
+      --ink: #1f2328;
+      --muted: #636c76;
+      --line: #d8dee4;
+      --soft: #f6f8fa;
+    }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: white;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 30px 28px 48px;
+    }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    h2 { margin: 0; font-size: 20px; }
+    h3 { margin: 0 0 10px; font-size: 15px; }
+    p { margin: 6px 0 0; color: var(--muted); line-height: 1.5; }
+    nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    nav a {
+      color: var(--ink);
+      text-decoration: none;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 7px 10px;
+      background: white;
+      font-size: 14px;
+    }
+    nav a.active { background: var(--ink); color: white; border-color: var(--ink); }
+    .comparison {
+      margin-top: 28px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .paired {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+      margin-top: 16px;
+      align-items: start;
+    }
+    article {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: var(--soft);
+    }
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: white;
+      border: 1px solid var(--line);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border: 1px solid var(--line);
+      margin-top: 14px;
+      font-size: 14px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 9px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    th:first-child, td:first-child,
+    th:nth-child(3), td:nth-child(3) { text-align: left; }
+    th { background: var(--soft); font-weight: 600; }
+    .good { color: #096b32; font-weight: 600; }
+    .warn { color: #9a6700; font-weight: 600; }
+    code {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+    @media (max-width: 920px) {
+      main { padding: 22px 14px 36px; }
+      .paired { grid-template-columns: 1fr; }
+      table { font-size: 12px; }
+      th, td { padding: 7px 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>M3 Picard Average Iterations</h1>
+    <p>Final M3 + Picard comparison. Baseline is the original checkpoint branch; paper-aligned uses Jacobi 5/5 and eta guard 1.1.</p>
+    <nav><a class="" href="isotherm_comparison.html">Temperature contours</a>
+<a class="" href="iteration_count_comparison.html">Iteration histories</a>
+<a class="active" href="average_iteration_comparison.html">Average iterations</a></nav>
+    
+    <section class="comparison">
+      <h2>Average iteration comparison</h2>
+      <p>The final aligned branch is closest to the paper for linear iterations, especially eta = 0.50 on 128x128. Nonlinear averages remain higher than the paper.</p>
+      <article>
+        <img src="assets/m3_picard_average_iterations_paper_style.png" alt="M3 Picard average iteration comparison">
+      </article>
+      <table><thead><tr><th>eta</th><th>grid</th><th>variant</th><th>steps</th><th>avg linear</th><th>paper linear</th><th>linear diff</th><th>avg nonlinear</th><th>paper nonlinear</th><th>nonlinear diff</th><th>max nonlinear</th></tr></thead><tbody><tr><td>0.1</td><td>32</td><td>aligned_guard_1p1</td><td>103</td><td>4.2330</td><td>3.2600</td><td class="warn">+0.9730</td><td>4.2330</td><td>4.2600</td><td class="good">-0.0270</td><td>8</td></tr>
+<tr><td>0.1</td><td>32</td><td>baseline</td><td>103</td><td>4.2233</td><td>3.2600</td><td class="warn">+0.9633</td><td>4.2233</td><td>4.2600</td><td class="good">-0.0367</td><td>8</td></tr>
+<tr><td>0.1</td><td>64</td><td>aligned_guard_1p1</td><td>129</td><td>5.4806</td><td>4.0900</td><td class="warn">+1.3906</td><td>5.4806</td><td>5.6900</td><td class="good">-0.2094</td><td>9</td></tr>
+<tr><td>0.1</td><td>64</td><td>baseline</td><td>129</td><td>5.4806</td><td>4.0900</td><td class="warn">+1.3906</td><td>5.4806</td><td>5.6900</td><td class="good">-0.2094</td><td>9</td></tr>
+<tr><td>0.1</td><td>128</td><td>aligned_guard_1p1</td><td>258</td><td>8.1899</td><td>7.0600</td><td class="warn">+1.1299</td><td>8.1899</td><td>8.0500</td><td class="good">+0.1399</td><td>12</td></tr>
+<tr><td>0.1</td><td>128</td><td>baseline</td><td>258</td><td>8.1899</td><td>7.0600</td><td class="warn">+1.1299</td><td>8.1899</td><td>8.0500</td><td class="good">+0.1399</td><td>12</td></tr>
+<tr><td>0.5</td><td>32</td><td>aligned_guard_1p1</td><td>140</td><td>8.1571</td><td>5.4300</td><td class="warn">+2.7271</td><td>8.1571</td><td>6.4300</td><td class="warn">+1.7271</td><td>28</td></tr>
+<tr><td>0.5</td><td>32</td><td>baseline</td><td>137</td><td>8.6204</td><td>5.4300</td><td class="warn">+3.1904</td><td>8.1533</td><td>6.4300</td><td class="warn">+1.7233</td><td>28</td></tr>
+<tr><td>0.5</td><td>64</td><td>aligned_guard_1p1</td><td>197</td><td>12.5685</td><td>9.7500</td><td class="warn">+2.8185</td><td>12.5685</td><td>9.4900</td><td class="warn">+3.0785</td><td>30</td></tr>
+<tr><td>0.5</td><td>64</td><td>baseline</td><td>194</td><td>18.9124</td><td>9.7500</td><td class="warn">+9.1624</td><td>12.6753</td><td>9.4900</td><td class="warn">+3.1853</td><td>34</td></tr>
+<tr><td>0.5</td><td>128</td><td>aligned_guard_1p1</td><td>304</td><td>22.9704</td><td>22.7000</td><td class="good">+0.2704</td><td>18.5625</td><td>14.7000</td><td class="warn">+3.8625</td><td>34</td></tr>
+<tr><td>0.5</td><td>128</td><td>baseline</td><td>301</td><td>32.6944</td><td>22.7000</td><td class="warn">+9.9944</td><td>18.7409</td><td>14.7000</td><td class="warn">+4.0409</td><td>41</td></tr></tbody></table>
+    </section>
+    
+  </main>
+</body>
+</html>

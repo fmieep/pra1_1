@@ -1,0 +1,153 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>M3 Picard Iteration Histories</title>
+  <style>
+    :root {
+      --ink: #1f2328;
+      --muted: #636c76;
+      --line: #d8dee4;
+      --soft: #f6f8fa;
+    }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: white;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 30px 28px 48px;
+    }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    h2 { margin: 0; font-size: 20px; }
+    h3 { margin: 0 0 10px; font-size: 15px; }
+    p { margin: 6px 0 0; color: var(--muted); line-height: 1.5; }
+    nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    nav a {
+      color: var(--ink);
+      text-decoration: none;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 7px 10px;
+      background: white;
+      font-size: 14px;
+    }
+    nav a.active { background: var(--ink); color: white; border-color: var(--ink); }
+    .comparison {
+      margin-top: 28px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .paired {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+      margin-top: 16px;
+      align-items: start;
+    }
+    article {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: var(--soft);
+    }
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: white;
+      border: 1px solid var(--line);
+    }
+    .omitted {
+      min-height: 280px;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      color: var(--muted);
+      background: white;
+      border: 1px dashed var(--line);
+      text-align: center;
+      line-height: 1.55;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border: 1px solid var(--line);
+      margin-top: 14px;
+      font-size: 14px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 9px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    th:first-child, td:first-child,
+    th:nth-child(3), td:nth-child(3) { text-align: left; }
+    th { background: var(--soft); font-weight: 600; }
+    .good { color: #096b32; font-weight: 600; }
+    .warn { color: #9a6700; font-weight: 600; }
+    code {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+    @media (max-width: 920px) {
+      main { padding: 22px 14px 36px; }
+      .paired { grid-template-columns: 1fr; }
+      table { font-size: 12px; }
+      th, td { padding: 7px 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>M3 Picard Iteration Histories</h1>
+    <p>Final M3 + Picard comparison. Baseline is the original checkpoint branch; paper-aligned uses Jacobi 5/5 and eta guard 1.1.</p>
+    <nav><a class="" href="isotherm_comparison.html">Temperature contours</a>
+<a class="active" href="iteration_count_comparison.html">Iteration histories</a>
+<a class="" href="average_iteration_comparison.html">Average iterations</a></nav>
+    
+    <section class="comparison">
+      <h2>Picard linear iterations on M3</h2>
+      <p>Left: reference to paper Figure 8. Right: final paper-aligned result, drawn with the same eta-panel and grid-line-style convention.</p>
+      <div class="paired">
+        <article>
+          <h3>Paper Figure 8</h3>
+          <div class="omitted">Paper Figure 8 is referenced from the original article; the public repository keeps only locally generated reproduction plots.</div>
+        </article>
+        <article>
+          <h3>paper-aligned code result</h3>
+          <img src="assets/m3_picard_aligned_guard_1p1_linear_iterations_paper_style.png" alt="paper-aligned Picard linear iterations">
+        </article>
+      </div>
+    </section>
+    <section class="comparison">
+      <h2>Picard nonlinear iterations on M3</h2>
+      <p>Left: reference to paper Figure 9. Right: final paper-aligned result. The spike is reduced relative to baseline, but the average nonlinear count is still higher than the paper.</p>
+      <div class="paired">
+        <article>
+          <h3>Paper Figure 9</h3>
+          <div class="omitted">Paper Figure 9 is referenced from the original article; the public repository keeps only locally generated reproduction plots.</div>
+        </article>
+        <article>
+          <h3>paper-aligned code result</h3>
+          <img src="assets/m3_picard_aligned_guard_1p1_nonlinear_iterations_paper_style.png" alt="paper-aligned Picard nonlinear iterations">
+        </article>
+      </div>
+    </section>
+    
+  </main>
+</body>
+</html>

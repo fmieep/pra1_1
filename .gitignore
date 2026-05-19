@@ -7,7 +7,13 @@ __pycache__/
 checkpoints/
 checkpoints_full_diffusion/
 
-output/
+# Generated outputs are ignored by default. Keep only lightweight,
+# curated reproducibility reports that are useful on GitHub.
+output/*
+!output/m3_picard_final_html/
+!output/m3_picard_final_html/**
+!output/m3_picard_mg_linear/
+!output/m3_picard_mg_linear/**
 output_full_mp4/
 output_gif/
 output_mp4/
@@ -18,5 +24,10 @@ output_truth_npz/
 *.mp4
 *.gif
 *.pdf
+
+# Keep generated report PDFs, but do not publish figures cropped from the paper.
+!output/m3_picard_final_html/**/*.pdf
+!output/m3_picard_mg_linear/**/*.pdf
+output/m3_picard_final_html/**/paper_fig*.png
 
 paper.txt
